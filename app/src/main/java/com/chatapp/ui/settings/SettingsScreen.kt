@@ -15,6 +15,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
@@ -42,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -93,14 +95,48 @@ fun SettingsScreen(
             // --- API Key Management ---
             SectionHeader("API Key / Token")
 
-            ProviderType.entries.forEach { provider ->
-                ApiKeyRow(
-                    provider = provider,
-                    hasKey = uiState.apiKeys[provider] ?: false,
-                    isVisible = uiState.showKey[provider] ?: false,
-                    onEdit = { viewModel.startEditApiKey(provider) },
-                    onToggleVisibility = { viewModel.toggleKeyVisibility(provider) }
-                )
+            // DeepSeek always visible
+            ApiKeyRow(
+                provider = ProviderType.DEEPSEEK,
+                hasKey = uiState.apiKeys[ProviderType.DEEPSEEK] ?: false,
+                isVisible = uiState.showKey[ProviderType.DEEPSEEK] ?: false,
+                onEdit = { viewModel.startEditApiKey(ProviderType.DEEPSEEK) },
+                onToggleVisibility = { viewModel.toggleKeyVisibility(ProviderType.DEEPSEEK) }
+            )
+
+            val otherProviders = ProviderType.entries.filter { it != ProviderType.DEEPSEEK }
+            var showExtraProviders by remember { mutableStateOf(false) }
+
+            if (!showExtraProviders) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showExtraProviders = true }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add Provider",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(end = 8.dp)
+                    )
+                    Text(
+                        text = "Add Provider",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                otherProviders.forEach { provider ->
+                    ApiKeyRow(
+                        provider = provider,
+                        hasKey = uiState.apiKeys[provider] ?: false,
+                        isVisible = uiState.showKey[provider] ?: false,
+                        onEdit = { viewModel.startEditApiKey(provider) },
+                        onToggleVisibility = { viewModel.toggleKeyVisibility(provider) }
+                    )
+                }
             }
 
             HorizontalDivider(
@@ -209,7 +245,11 @@ fun SettingsScreen(
                         onValueChange = { viewModel.onEditKeyValueChange(it) },
                         label = { Text("API Key") },
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation(),
+                        visualTransformation = if (uiState.showKey[uiState.editingProvider] == true) {
+                            VisualTransformation.None
+                        } else {
+                            PasswordVisualTransformation()
+                        },
                         modifier = Modifier.fillMaxWidth()
                     )
 

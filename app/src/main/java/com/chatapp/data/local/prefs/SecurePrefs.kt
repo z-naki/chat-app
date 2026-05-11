@@ -49,6 +49,7 @@ class SecurePrefs @Inject constructor(
         return try {
             cryptoManager.decrypt(envelope)
         } catch (e: Exception) {
+            android.util.Log.e("SecurePrefs", "Failed to decrypt API key for $provider", e)
             null
         }
     }
