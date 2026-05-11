@@ -47,16 +47,4 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun getThemeMode(): Flow<String> = securePrefs.getThemeMode()
 
     override suspend fun setThemeMode(mode: String) = securePrefs.setThemeMode(mode)
-
-    override fun getTemperature(): Flow<Float> = securePrefs.getTemperature()
-
-    override suspend fun setTemperature(temp: Float) = securePrefs.setTemperature(temp)
-
-    override fun getMaxTokens(): Flow<Int> = securePrefs.getMaxTokens()
-
-    override suspend fun setMaxTokens(tokens: Int) = securePrefs.setMaxTokens(tokens)
-
-    override fun getContextRounds(): Flow<Int> = securePrefs.getContextRounds()
-
-    override suspend fun setContextRounds(rounds: Int) = securePrefs.setContextRounds(rounds)
 }

@@ -180,47 +180,6 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.outline
             )
 
-            // --- Default Parameters ---
-            SectionHeader("Default Parameters")
-
-            Text(
-                text = "Temperature: ${uiState.temperature}",
-                style = MaterialTheme.typography.bodyMedium
-            )
-            Slider(
-                value = uiState.temperature,
-                onValueChange = { viewModel.setTemperature(it) },
-                valueRange = 0f..2f,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = uiState.maxTokens,
-                onValueChange = { viewModel.setMaxTokens(it) },
-                label = { Text("Max Output Tokens") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            OutlinedTextField(
-                value = uiState.contextRounds,
-                onValueChange = { viewModel.setContextRounds(it) },
-                label = { Text("Context Rounds") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            HorizontalDivider(
-                modifier = Modifier.padding(vertical = 12.dp),
-                color = MaterialTheme.colorScheme.outline
-            )
-
             // --- About ---
             SectionHeader("About")
             Text(

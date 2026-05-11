@@ -129,4 +129,18 @@ class ChatViewModel @Inject constructor(
             it.copy(isStreaming = false, streamingContent = "")
         }
     }
+
+    fun updateParameters(temperature: Float, maxTokens: String, contextRounds: String) {
+        val conv = _uiState.value.conversation ?: return
+        val tokens = maxTokens.toIntOrNull() ?: return
+        val rounds = contextRounds.toIntOrNull() ?: return
+        viewModelScope.launch {
+            chatRepository.updateConversationParameters(conv.id, temperature, tokens, rounds)
+            _uiState.update { it.copy(conversation = conv.copy(
+                temperature = temperature,
+                maxTokens = tokens,
+                contextRounds = rounds
+            ))}
+        }
+    }
 }

@@ -108,50 +108,9 @@ class SecurePrefs @Inject constructor(
         }
     }
 
-    // --- Model Parameters ---
-
-    fun getTemperature(): Flow<Float> {
-        return context.dataStore.data.map { prefs ->
-            prefs[TEMPERATURE] ?: 0.7f
-        }
-    }
-
-    suspend fun setTemperature(temp: Float) {
-        context.dataStore.edit { prefs ->
-            prefs[TEMPERATURE] = temp
-        }
-    }
-
-    fun getMaxTokens(): Flow<Int> {
-        return context.dataStore.data.map { prefs ->
-            prefs[MAX_TOKENS] ?: 384_000
-        }
-    }
-
-    suspend fun setMaxTokens(tokens: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[MAX_TOKENS] = tokens
-        }
-    }
-
-    fun getContextRounds(): Flow<Int> {
-        return context.dataStore.data.map { prefs ->
-            prefs[CONTEXT_ROUNDS] ?: 20
-        }
-    }
-
-    suspend fun setContextRounds(rounds: Int) {
-        context.dataStore.edit { prefs ->
-            prefs[CONTEXT_ROUNDS] = rounds
-        }
-    }
-
     companion object {
         private val PROXY_ENABLED = booleanPreferencesKey("proxy_enabled")
         private val PROXY_ADDRESS = stringPreferencesKey("proxy_address")
         private val THEME_MODE = stringPreferencesKey("theme_mode")
-        private val TEMPERATURE = floatPreferencesKey("temperature")
-        private val MAX_TOKENS = intPreferencesKey("max_tokens")
-        private val CONTEXT_ROUNDS = intPreferencesKey("context_rounds")
     }
 }

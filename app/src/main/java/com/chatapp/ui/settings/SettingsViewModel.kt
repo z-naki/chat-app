@@ -36,21 +36,6 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(proxyAddress = addr) }
             }
         }
-        viewModelScope.launch {
-            settingsRepository.getTemperature().collect { temp ->
-                _uiState.update { it.copy(temperature = temp) }
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.getMaxTokens().collect { tokens ->
-                _uiState.update { it.copy(maxTokens = tokens.toString()) }
-            }
-        }
-        viewModelScope.launch {
-            settingsRepository.getContextRounds().collect { rounds ->
-                _uiState.update { it.copy(contextRounds = rounds.toString()) }
-            }
-        }
     }
 
     fun setThemeMode(mode: String) {
@@ -64,24 +49,6 @@ class SettingsViewModel @Inject constructor(
     fun setProxyAddress(address: String) {
         _uiState.update { it.copy(proxyAddress = address) }
         viewModelScope.launch { settingsRepository.setProxyAddress(address) }
-    }
-
-    fun setTemperature(temp: Float) {
-        viewModelScope.launch { settingsRepository.setTemperature(temp) }
-    }
-
-    fun setMaxTokens(tokens: String) {
-        _uiState.update { it.copy(maxTokens = tokens) }
-        tokens.toIntOrNull()?.let {
-            viewModelScope.launch { settingsRepository.setMaxTokens(it) }
-        }
-    }
-
-    fun setContextRounds(rounds: String) {
-        _uiState.update { it.copy(contextRounds = rounds) }
-        rounds.toIntOrNull()?.let {
-            viewModelScope.launch { settingsRepository.setContextRounds(it) }
-        }
     }
 
     fun startEditApiKey(providerType: ProviderType) {

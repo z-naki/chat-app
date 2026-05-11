@@ -15,10 +15,4 @@ interface SettingsRepository {
     suspend fun setProxyAddress(address: String)
     fun getThemeMode(): Flow<String>
     suspend fun setThemeMode(mode: String)
-    fun getTemperature(): Flow<Float>
-    suspend fun setTemperature(temp: Float)
-    fun getMaxTokens(): Flow<Int>
-    suspend fun setMaxTokens(tokens: Int)
-    fun getContextRounds(): Flow<Int>
-    suspend fun setContextRounds(rounds: Int)
 }

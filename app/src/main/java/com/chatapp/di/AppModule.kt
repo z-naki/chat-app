@@ -37,7 +37,7 @@ object AppModule {
             context,
             AppDatabase::class.java,
             "chat_app.db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides

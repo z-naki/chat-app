@@ -16,7 +16,7 @@ class StreamMessageUseCase @Inject constructor(
         enableSearch: Boolean
     ): Flow<StreamChunk> {
         return chatRepository.streamReply(
-            providerType = conversation.provider,
+            conversation = conversation,
             messages = messages,
             enableSearch = enableSearch
         )

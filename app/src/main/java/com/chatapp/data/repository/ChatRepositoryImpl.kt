@@ -34,15 +34,33 @@ class ChatRepositoryImpl @Inject constructor(
         return conversationDao.getById(conversationId)?.toDomain()
     }
 
-    override suspend fun createConversation(title: String, provider: ProviderType): Conversation {
+    override suspend fun createConversation(
+        title: String,
+        provider: ProviderType,
+        temperature: Float,
+        maxTokens: Int,
+        contextRounds: Int
+    ): Conversation {
         val entity = ConversationEntity(
             title = title,
             provider = provider.name,
+            temperature = temperature,
+            maxTokens = maxTokens,
+            contextRounds = contextRounds,
             createdAt = System.currentTimeMillis(),
             updatedAt = System.currentTimeMillis()
         )
         val id = conversationDao.insert(entity)
         return entity.copy(id = id).toDomain()
+    }
+
+    override suspend fun updateConversationParameters(
+        conversationId: Long,
+        temperature: Float,
+        maxTokens: Int,
+        contextRounds: Int
+    ) {
+        conversationDao.updateParameters(conversationId, temperature, maxTokens, contextRounds)
     }
 
     override suspend fun deleteConversation(conversationId: Long) {
@@ -64,12 +82,13 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     override fun streamReply(
-        providerType: ProviderType,
+        conversation: Conversation,
         messages: List<Message>,
         enableSearch: Boolean
     ): Flow<StreamChunk> {
-        val provider = providerRouter.resolve(providerType)
-        val providerMessages = messages.map { msg ->
+        val provider = providerRouter.resolve(conversation.provider)
+        val trimmed = trimContext(messages, conversation.contextRounds)
+        val providerMessages = trimmed.map { msg ->
             ProviderMessage(
                 role = when (msg.role) {
                     com.chatapp.domain.model.MessageRole.USER -> "user"
@@ -82,8 +101,15 @@ class ChatRepositoryImpl @Inject constructor(
         val request = ChatRequest(
             model = "deepseek-v4-pro",
             messages = providerMessages,
+            temperature = conversation.temperature,
+            maxTokens = conversation.maxTokens,
             enableSearch = enableSearch
         )
         return provider.stream(request)
+    }
+
+    private fun trimContext(messages: List<Message>, contextRounds: Int): List<Message> {
+        val maxMessages = contextRounds * 2
+        return if (messages.size > maxMessages) messages.takeLast(maxMessages) else messages
     }
 }

@@ -24,6 +24,9 @@ interface ConversationDao {
     @Query("UPDATE conversations SET updated_at = :updatedAt WHERE id = :id")
     suspend fun updateTimestamp(id: Long, updatedAt: Long = System.currentTimeMillis())
 
+    @Query("UPDATE conversations SET temperature = :temperature, max_tokens = :maxTokens, context_rounds = :contextRounds WHERE id = :id")
+    suspend fun updateParameters(id: Long, temperature: Float, maxTokens: Int, contextRounds: Int)
+
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun delete(id: Long)
 }
