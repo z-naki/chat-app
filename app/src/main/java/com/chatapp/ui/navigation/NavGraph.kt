@@ -7,11 +7,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.chatapp.ui.chat.ChatScreen
-import com.chatapp.ui.conversationlist.ConversationListScreen
+import com.chatapp.ui.home.HomeScreen
 import com.chatapp.ui.settings.SettingsScreen
 
 object Routes {
-    const val CONVERSATION_LIST = "conversation_list"
+    const val HOME = "home"
     const val CHAT = "chat/{conversationId}"
     const val SETTINGS = "settings"
 
@@ -24,10 +24,10 @@ fun NavGraph() {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.CONVERSATION_LIST
+        startDestination = Routes.HOME
     ) {
-        composable(Routes.CONVERSATION_LIST) {
-            ConversationListScreen(
+        composable(Routes.HOME) {
+            HomeScreen(
                 onConversationClick = { convId ->
                     navController.navigate(Routes.chatRoute(convId))
                 },

@@ -55,6 +55,8 @@ import com.chatapp.ui.components.StreamingBubble
 fun ChatScreen(
     conversationId: Long,
     onBack: () -> Unit,
+    modifier: Modifier = Modifier,
+    onConversationCreated: ((Long) -> Unit)? = null,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,6 +67,11 @@ fun ChatScreen(
     var editTemp by remember(uiState.conversation) { mutableStateOf(uiState.conversation?.temperature ?: 0.7f) }
     var editTokens by remember(uiState.conversation) { mutableStateOf((uiState.conversation?.maxTokens ?: 384_000).toString()) }
     var editRounds by remember(uiState.conversation) { mutableStateOf((uiState.conversation?.contextRounds ?: 20).toString()) }
+    val isNewConversation = conversationId == -1L
+
+    LaunchedEffect(onConversationCreated) {
+        viewModel.setOnConversationCreated(onConversationCreated)
+    }
 
     LaunchedEffect(uiState.messages.size, uiState.isStreaming) {
         if (uiState.messages.isNotEmpty() || uiState.isStreaming) {
@@ -73,22 +80,24 @@ fun ChatScreen(
     }
 
     Scaffold(
+        modifier = modifier,
         topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        text = uiState.conversation?.title ?: "Chat",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+            if (!isNewConversation) {
+                TopAppBar(
+                    title = {
+                        Text(
+                            text = uiState.conversation?.title ?: "Chat",
+                            style = MaterialTheme.typography.titleMedium
                         )
-                    }
-                },
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back"
+                            )
+                        }
+                    },
                 actions = {
                     IconButton(onClick = { viewModel.toggleSearch() }) {
                         Icon(
@@ -126,10 +135,11 @@ fun ChatScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.background
+                    )
                 )
-            )
+            }
         },
         bottomBar = {
             InputBar(

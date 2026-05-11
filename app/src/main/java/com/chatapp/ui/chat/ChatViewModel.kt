@@ -33,15 +33,22 @@ class ChatViewModel @Inject constructor(
     val uiState: StateFlow<ChatUiState> = _uiState.asStateFlow()
 
     private var streamJob: Job? = null
+    private var onConversationCreated: ((Long) -> Unit)? = null
+
+    fun setOnConversationCreated(callback: ((Long) -> Unit)?) {
+        onConversationCreated = callback
+    }
 
     init {
-        viewModelScope.launch {
-            val conversation = chatRepository.getConversation(conversationId)
-            _uiState.update { it.copy(conversation = conversation) }
-        }
-        viewModelScope.launch {
-            chatRepository.getMessages(conversationId).collect { messages ->
-                _uiState.update { it.copy(messages = messages) }
+        if (conversationId > 0) {
+            viewModelScope.launch {
+                val conversation = chatRepository.getConversation(conversationId)
+                _uiState.update { it.copy(conversation = conversation) }
+            }
+            viewModelScope.launch {
+                chatRepository.getMessages(conversationId).collect { messages ->
+                    _uiState.update { it.copy(messages = messages) }
+                }
             }
         }
     }
@@ -61,10 +68,22 @@ class ChatViewModel @Inject constructor(
         _uiState.update { it.copy(inputText = "", errorMessage = null) }
 
         viewModelScope.launch {
-            val userMessage = sendMessageUseCase(conversationId, text)
+            // Auto-create conversation if this is a new conversation
+            var activeConversationId = conversationId
+            if (activeConversationId <= 0) {
+                val newConv = chatRepository.createConversation(
+                    title = text.take(50),
+                    provider = com.chatapp.domain.model.ProviderType.DEEPSEEK
+                )
+                activeConversationId = newConv.id
+                _uiState.update { it.copy(conversation = newConv) }
+                onConversationCreated?.invoke(activeConversationId)
+            }
+
+            val userMessage = sendMessageUseCase(activeConversationId, text)
 
             val streamingMessage = Message(
-                conversationId = conversationId,
+                conversationId = activeConversationId,
                 role = MessageRole.ASSISTANT,
                 content = "",
                 status = MessageStatus.STREAMING
