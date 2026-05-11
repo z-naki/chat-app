@@ -1,0 +1,62 @@
+package com.chatapp.data.repository
+
+import com.chatapp.data.local.prefs.SecurePrefs
+import com.chatapp.domain.model.ProviderType
+import com.chatapp.domain.repository.SettingsRepository
+import kotlinx.coroutines.flow.Flow
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class SettingsRepositoryImpl @Inject constructor(
+    private val securePrefs: SecurePrefs
+) : SettingsRepository {
+
+    override suspend fun saveApiKey(providerType: ProviderType, key: String) {
+        securePrefs.putApiKey(providerType.name, key)
+    }
+
+    override suspend fun getApiKey(providerType: ProviderType): String? {
+        return securePrefs.getApiKey(providerType.name)
+    }
+
+    override suspend fun deleteApiKey(providerType: ProviderType) {
+        securePrefs.deleteApiKey(providerType.name)
+    }
+
+    override suspend fun getActiveProvider(): ProviderType {
+        return try {
+            ProviderType.valueOf(securePrefs.getActiveProvider())
+        } catch (e: IllegalArgumentException) {
+            ProviderType.DEEPSEEK
+        }
+    }
+
+    override suspend fun setActiveProvider(type: ProviderType) {
+        securePrefs.setActiveProvider(type.name)
+    }
+
+    override fun isProxyEnabled(): Flow<Boolean> = securePrefs.isProxyEnabled()
+
+    override suspend fun setProxyEnabled(enabled: Boolean) = securePrefs.setProxyEnabled(enabled)
+
+    override fun getProxyAddress(): Flow<String> = securePrefs.getProxyAddress()
+
+    override suspend fun setProxyAddress(address: String) = securePrefs.setProxyAddress(address)
+
+    override fun getThemeMode(): Flow<String> = securePrefs.getThemeMode()
+
+    override suspend fun setThemeMode(mode: String) = securePrefs.setThemeMode(mode)
+
+    override fun getTemperature(): Flow<Float> = securePrefs.getTemperature()
+
+    override suspend fun setTemperature(temp: Float) = securePrefs.setTemperature(temp)
+
+    override fun getMaxTokens(): Flow<Int> = securePrefs.getMaxTokens()
+
+    override suspend fun setMaxTokens(tokens: Int) = securePrefs.setMaxTokens(tokens)
+
+    override fun getContextRounds(): Flow<Int> = securePrefs.getContextRounds()
+
+    override suspend fun setContextRounds(rounds: Int) = securePrefs.setContextRounds(rounds)
+}
