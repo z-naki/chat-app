@@ -80,7 +80,9 @@ fun ChatScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.imePadding(),
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             if (!isNewConversation) {
                 TopAppBar(
@@ -98,43 +100,43 @@ fun ChatScreen(
                             )
                         }
                     },
-                actions = {
-                    IconButton(onClick = { viewModel.toggleSearch() }) {
-                        Icon(
-                            imageVector = if (uiState.enableSearch) {
-                                Icons.Filled.Search
-                            } else {
-                                Icons.Filled.SearchOff
-                            },
-                            contentDescription = "Toggle web search",
-                            tint = if (uiState.enableSearch) {
-                                MaterialTheme.colorScheme.primary
-                            } else {
-                                MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                        )
-                    }
-                    if (conversationId > 0) {
-                        IconButton(onClick = { showMenu = true }) {
+                    actions = {
+                        IconButton(onClick = { viewModel.toggleSearch() }) {
                             Icon(
-                                imageVector = Icons.Default.MoreVert,
-                                contentDescription = "More options"
-                            )
-                        }
-                        DropdownMenu(
-                            expanded = showMenu,
-                            onDismissRequest = { showMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Parameters") },
-                                onClick = {
-                                    showMenu = false
-                                    showParamsDialog = true
+                                imageVector = if (uiState.enableSearch) {
+                                    Icons.Filled.Search
+                                } else {
+                                    Icons.Filled.SearchOff
+                                },
+                                contentDescription = "Toggle web search",
+                                tint = if (uiState.enableSearch) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
                                 }
                             )
                         }
-                    }
-                },
+                        if (conversationId > 0) {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = "More options"
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Parameters") },
+                                    onClick = {
+                                        showMenu = false
+                                        showParamsDialog = true
+                                    }
+                                )
+                            }
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background
                     )
@@ -150,10 +152,7 @@ fun ChatScreen(
                 isStreaming = uiState.isStreaming,
                 placeholder = "Input message..."
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = MaterialTheme.colorScheme.background,
-        modifier = Modifier.imePadding()
+        }
     ) { padding ->
         LazyColumn(
             state = listState,
