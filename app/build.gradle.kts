@@ -86,4 +86,5 @@ dependencies {
     testImplementation(libs.room.testing)
 
     androidTestImplementation(libs.compose.ui.test)
+    androidTestImplementation(libs.androidx.test.junit)
 }

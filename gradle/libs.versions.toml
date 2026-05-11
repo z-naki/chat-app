@@ -2,7 +2,7 @@
 agp = "8.5.2"
 kotlin = "2.0.10"
 compose-bom = "2024.09.00"
-compose-compiler = "1.5.15"
+
 room = "2.6.1"
 hilt = "2.51.1"
 hilt-navigation-compose = "1.2.0"
@@ -59,6 +59,7 @@ datastore-preferences = { group = "androidx.datastore", name = "datastore-prefer
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 junit = { group = "junit", name = "junit", version = "4.13.2" }
+androidx-test-junit = { group = "androidx.test.ext", name = "junit", version = "1.2.1" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
