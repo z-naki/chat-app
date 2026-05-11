@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -33,7 +32,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -190,23 +188,27 @@ fun HomeScreen(
     }
 }
 
-private data class DayGroup(val dateLabel: String, val conversations: List<Conversation>)
-
 private fun groupByDay(conversations: List<Conversation>): List<DayGroup> {
     val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     val today = fmt.format(Date())
-    val yesterday = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(Date(System.currentTimeMillis() - 86_400_000))
-    val displayFmt = SimpleDateFormat("MM/dd", Locale.getDefault())
+    val yesterday = fmt.format(Date(System.currentTimeMillis() - 86_400_000))
 
     return conversations
         .groupBy { fmt.format(Date(it.createdAt)) }
         .map { (date, convs) ->
-            val label = when (date) {
-                today -> "Today"
-                yesterday -> "Yesterday"
-                else -> date
+            val (sortKey, label) = when (date) {
+                today -> 0 to "Today"
+                yesterday -> 1 to "Yesterday"
+                else -> 2 to date
             }
-            DayGroup(label, convs.sortedByDescending { it.createdAt })
+            DayGroup(label, convs.sortedByDescending { it.createdAt }, sortKey)
         }
-        .sortedByDescending { it.dateLabel }
+        .sortedBy { it.sortKey }
+        .map { it.copy(sortKey = 0) }
 }
+
+private data class DayGroup(
+    val dateLabel: String,
+    val conversations: List<Conversation>,
+    val sortKey: Int = 0
+)

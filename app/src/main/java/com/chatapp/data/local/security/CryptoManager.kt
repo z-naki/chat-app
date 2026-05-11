@@ -21,8 +21,8 @@ class CryptoManager @Inject constructor() {
         private const val GCM_IV_LENGTH = 12
     }
 
-    private val keyStore: KeyStore = KeyStore.getInstance(KEYSTORE_PROVIDER).apply {
-        load(null)
+    private val keyStore: KeyStore by lazy {
+        KeyStore.getInstance(KEYSTORE_PROVIDER).apply { load(null) }
     }
 
     private val secretKey: SecretKey by lazy {
@@ -64,6 +64,7 @@ class CryptoManager @Inject constructor() {
 
     fun decrypt(encodedData: String): String {
         val combined = android.util.Base64.decode(encodedData, android.util.Base64.NO_WRAP)
+        if (combined.size < GCM_IV_LENGTH) throw IllegalArgumentException("Invalid encrypted data")
         val iv = combined.copyOfRange(0, GCM_IV_LENGTH)
         val encrypted = combined.copyOfRange(GCM_IV_LENGTH, combined.size)
         val cipher = Cipher.getInstance(TRANSFORMATION)

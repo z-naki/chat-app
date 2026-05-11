@@ -22,11 +22,7 @@ class ProviderRouter @Inject constructor(
 
     fun getActive(): AiProvider {
         val activeType = securePrefs.getActiveProvider()
-        val type = try {
-            ProviderType.valueOf(activeType)
-        } catch (e: IllegalArgumentException) {
-            ProviderType.DEEPSEEK
-        }
+        val type = ProviderType.fromStringOrDefault(activeType)
         return resolve(type)
     }
 

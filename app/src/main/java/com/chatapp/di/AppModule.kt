@@ -6,11 +6,8 @@ import com.chatapp.data.local.db.AppDatabase
 import com.chatapp.data.local.db.dao.ConversationDao
 import com.chatapp.data.local.db.dao.MessageDao
 import com.chatapp.data.local.prefs.SecurePrefs
-import com.chatapp.data.local.security.CryptoManager
-import com.chatapp.data.remote.provider.AiProvider
 import com.chatapp.data.remote.provider.ProviderRouter
 import com.chatapp.data.remote.provider.deepseek.DeepSeekProvider
-import com.chatapp.data.remote.sse.SseClient
 import com.chatapp.data.repository.ChatRepositoryImpl
 import com.chatapp.data.repository.SettingsRepositoryImpl
 import com.chatapp.domain.repository.ChatRepository

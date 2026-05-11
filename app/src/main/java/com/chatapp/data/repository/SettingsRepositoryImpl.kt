@@ -25,11 +25,7 @@ class SettingsRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getActiveProvider(): ProviderType {
-        return try {
-            ProviderType.valueOf(securePrefs.getActiveProvider())
-        } catch (e: IllegalArgumentException) {
-            ProviderType.DEEPSEEK
-        }
+        return ProviderType.fromStringOrDefault(securePrefs.getActiveProvider())
     }
 
     override suspend fun setActiveProvider(type: ProviderType) {

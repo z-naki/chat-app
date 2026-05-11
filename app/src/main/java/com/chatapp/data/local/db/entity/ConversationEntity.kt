@@ -20,7 +20,7 @@ data class ConversationEntity(
     fun toDomain(): Conversation = Conversation(
         id = id,
         title = title,
-        provider = ProviderType.valueOf(provider),
+        provider = ProviderType.fromStringOrDefault(provider),
         temperature = temperature,
         maxTokens = maxTokens,
         contextRounds = contextRounds,

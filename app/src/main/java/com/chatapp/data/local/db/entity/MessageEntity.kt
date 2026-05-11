@@ -33,11 +33,11 @@ data class MessageEntity(
     fun toDomain(): Message = Message(
         id = id,
         conversationId = conversationId,
-        role = MessageRole.valueOf(role),
+        role = MessageRole.fromStringOrDefault(role),
         content = content,
         thinking = thinking,
         timestamp = timestamp,
-        status = MessageStatus.valueOf(status)
+        status = runCatching { MessageStatus.valueOf(status) }.getOrDefault(MessageStatus.COMPLETE)
     )
 
     companion object {

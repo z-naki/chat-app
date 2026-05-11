@@ -5,8 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.floatPreferencesKey
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -49,7 +47,7 @@ class SecurePrefs @Inject constructor(
         return try {
             cryptoManager.decrypt(envelope)
         } catch (e: Exception) {
-            android.util.Log.e("SecurePrefs", "Failed to decrypt API key for $provider", e)
+            android.util.Log.w("SecurePrefs", "Failed to decrypt API key for $provider")
             null
         }
     }
@@ -77,8 +75,10 @@ class SecurePrefs @Inject constructor(
     }
 
     suspend fun setProxyEnabled(enabled: Boolean) {
-        context.dataStore.edit { prefs ->
-            prefs[PROXY_ENABLED] = enabled
+        try {
+            context.dataStore.edit { prefs -> prefs[PROXY_ENABLED] = enabled }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurePrefs", "Failed to save proxy_enabled", e)
         }
     }
 
@@ -89,8 +89,10 @@ class SecurePrefs @Inject constructor(
     }
 
     suspend fun setProxyAddress(address: String) {
-        context.dataStore.edit { prefs ->
-            prefs[PROXY_ADDRESS] = address
+        try {
+            context.dataStore.edit { prefs -> prefs[PROXY_ADDRESS] = address }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurePrefs", "Failed to save proxy_address", e)
         }
     }
 
@@ -103,8 +105,10 @@ class SecurePrefs @Inject constructor(
     }
 
     suspend fun setThemeMode(mode: String) {
-        context.dataStore.edit { prefs ->
-            prefs[THEME_MODE] = mode
+        try {
+            context.dataStore.edit { prefs -> prefs[THEME_MODE] = mode }
+        } catch (e: Exception) {
+            android.util.Log.e("SecurePrefs", "Failed to save theme_mode", e)
         }
     }
 

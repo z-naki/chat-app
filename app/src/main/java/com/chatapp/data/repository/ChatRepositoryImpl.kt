@@ -7,6 +7,7 @@ import com.chatapp.data.local.db.entity.MessageEntity
 import com.chatapp.data.remote.provider.ProviderRouter
 import com.chatapp.domain.model.Conversation
 import com.chatapp.domain.model.Message
+import com.chatapp.domain.model.MessageRole
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.ChatRequest
 import com.chatapp.domain.model.ProviderMessage
@@ -91,9 +92,9 @@ class ChatRepositoryImpl @Inject constructor(
         val providerMessages = trimmed.map { msg ->
             ProviderMessage(
                 role = when (msg.role) {
-                    com.chatapp.domain.model.MessageRole.USER -> "user"
-                    com.chatapp.domain.model.MessageRole.ASSISTANT -> "assistant"
-                    com.chatapp.domain.model.MessageRole.SYSTEM -> "system"
+                    MessageRole.USER -> "user"
+                    MessageRole.ASSISTANT -> "assistant"
+                    MessageRole.SYSTEM -> "system"
                 },
                 content = msg.content
             )
@@ -109,7 +110,8 @@ class ChatRepositoryImpl @Inject constructor(
     }
 
     private fun trimContext(messages: List<Message>, contextRounds: Int): List<Message> {
-        val maxMessages = contextRounds * 2
+        val effective = maxOf(contextRounds, 1)
+        val maxMessages = effective * 2
         return if (messages.size > maxMessages) messages.takeLast(maxMessages) else messages
     }
 }

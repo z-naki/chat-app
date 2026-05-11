@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.chatapp.domain.model.Message
 import com.chatapp.domain.model.MessageRole
 import com.chatapp.domain.model.MessageStatus
+import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.StreamChunk
 import com.chatapp.domain.repository.ChatRepository
 import com.chatapp.domain.usecase.SendMessageUseCase
@@ -63,7 +64,7 @@ class ChatViewModel @Inject constructor(
 
     fun sendMessage() {
         val text = _uiState.value.inputText.trim()
-        if (text.isBlank()) return
+        if (text.isBlank() || _uiState.value.isStreaming) return
 
         _uiState.update { it.copy(inputText = "", errorMessage = null) }
 
@@ -73,7 +74,7 @@ class ChatViewModel @Inject constructor(
             if (activeConversationId <= 0) {
                 val newConv = chatRepository.createConversation(
                     title = text.take(50),
-                    provider = com.chatapp.domain.model.ProviderType.DEEPSEEK
+                    provider = ProviderType.DEEPSEEK
                 )
                 activeConversationId = newConv.id
                 _uiState.update { it.copy(conversation = newConv) }
@@ -91,7 +92,7 @@ class ChatViewModel @Inject constructor(
             val streamingId = chatRepository.saveMessage(streamingMessage)
 
             _uiState.update { it.copy(isStreaming = true, streamingContent = "") }
-
+            streamJob?.cancel()
             streamJob = viewModelScope.launch {
                 val conversation = _uiState.value.conversation ?: run {
                     _uiState.update {

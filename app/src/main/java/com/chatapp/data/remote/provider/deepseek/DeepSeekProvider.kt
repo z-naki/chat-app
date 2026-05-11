@@ -14,14 +14,12 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
-import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
-import kotlinx.serialization.json.putJsonObject
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -50,7 +48,7 @@ class DeepSeekProvider @Inject constructor(
                     emit(StreamChunk.Error(IllegalStateException("DeepSeek API Key not configured")))
                 }
         } catch (e: Exception) {
-            Log.e("DeepSeekProvider", "Error retrieving API key", e)
+            Log.w("DeepSeekProvider", "Error retrieving API key")
             return flow {
                 emit(StreamChunk.Error(e))
             }
@@ -120,6 +118,7 @@ class DeepSeekProvider @Inject constructor(
 
             StreamChunk.Content("")
         } catch (e: Exception) {
+            Log.e("DeepSeekProvider", "Failed to parse SSE chunk", e)
             StreamChunk.Content("")
         }
     }
