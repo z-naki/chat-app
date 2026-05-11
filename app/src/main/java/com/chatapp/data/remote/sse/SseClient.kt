@@ -81,6 +81,18 @@ class SseClient @Inject constructor(
                             }
                         }
                     }
+                    // Process any remaining buffered data before closing
+                    if (currentData.isNotEmpty()) {
+                        val data = currentData.toString().trim()
+                        if (data == "[DONE]") {
+                            trySend(SseEvent.Done)
+                            close()
+                            return
+                        }
+                        if (data.isNotEmpty()) {
+                            trySend(SseEvent.Data(data))
+                        }
+                    }
                     trySend(SseEvent.Done)
                     close()
                 } catch (e: IOException) {

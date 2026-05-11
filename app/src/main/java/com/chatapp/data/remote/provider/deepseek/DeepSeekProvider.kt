@@ -54,8 +54,9 @@ class DeepSeekProvider @Inject constructor(
             }
         }
 
+        val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
         return sseClient.connect(
-            url = "$BASE_URL/v1/chat/completions",
+            url = "$baseUrl/v1/chat/completions",
             headers = mapOf(
                 "Authorization" to "Bearer $apiKey",
                 "Content-Type" to "application/json"
@@ -71,8 +72,9 @@ class DeepSeekProvider @Inject constructor(
     }
 
     private fun buildRequestBody(request: ChatRequest): String {
+        val model = securePrefs.getProviderModel("DEEPSEEK").ifEmpty { "deepseek-v4-pro" }
         val obj = buildJsonObject {
-            put("model", "deepseek-v4-pro")
+            put("model", model)
             put("stream", true)
             put("max_tokens", request.maxTokens)
             put("temperature", request.temperature.toDouble())

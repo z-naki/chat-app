@@ -56,6 +56,26 @@ class SecurePrefs @Inject constructor(
         encryptedPrefs.edit().remove("api_key_$provider").apply()
     }
 
+    // --- Provider Base URL (EncryptedSharedPreferences only, no envelope) ---
+
+    fun putProviderBaseUrl(provider: String, url: String) {
+        encryptedPrefs.edit().putString("base_url_$provider", url).apply()
+    }
+
+    fun getProviderBaseUrl(provider: String): String {
+        return encryptedPrefs.getString("base_url_$provider", null) ?: ""
+    }
+
+    // --- Provider Model ---
+
+    fun putProviderModel(provider: String, model: String) {
+        encryptedPrefs.edit().putString("model_$provider", model).apply()
+    }
+
+    fun getProviderModel(provider: String): String {
+        return encryptedPrefs.getString("model_$provider", null) ?: ""
+    }
+
     // --- Active Provider ---
 
     fun getActiveProvider(): String {

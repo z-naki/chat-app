@@ -32,6 +32,22 @@ class SettingsRepositoryImpl @Inject constructor(
         securePrefs.setActiveProvider(type.name)
     }
 
+    override suspend fun saveProviderBaseUrl(providerType: ProviderType, url: String) {
+        securePrefs.putProviderBaseUrl(providerType.name, url)
+    }
+
+    override suspend fun getProviderBaseUrl(providerType: ProviderType): String {
+        return securePrefs.getProviderBaseUrl(providerType.name)
+    }
+
+    override suspend fun saveProviderModel(providerType: ProviderType, model: String) {
+        securePrefs.putProviderModel(providerType.name, model)
+    }
+
+    override suspend fun getProviderModel(providerType: ProviderType): String {
+        return securePrefs.getProviderModel(providerType.name)
+    }
+
     override fun isProxyEnabled(): Flow<Boolean> = securePrefs.isProxyEnabled()
 
     override suspend fun setProxyEnabled(enabled: Boolean) = securePrefs.setProxyEnabled(enabled)
