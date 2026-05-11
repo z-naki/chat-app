@@ -1,11 +1,8 @@
 package com.chatapp.data.remote.sse
 
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.withContext
-import kotlinx.serialization.json.Json
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -21,8 +18,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SseClient @Inject constructor(
-    private val okHttpClient: OkHttpClient,
-    private val json: Json
+    private val okHttpClient: OkHttpClient
 ) {
 
     fun connect(

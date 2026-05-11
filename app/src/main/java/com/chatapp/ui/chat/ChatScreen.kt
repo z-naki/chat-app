@@ -32,7 +32,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.chatapp.domain.model.MessageStatus
 import com.chatapp.ui.components.InputBar
 import com.chatapp.ui.components.MessageBubble
 import com.chatapp.ui.components.StreamingBubble

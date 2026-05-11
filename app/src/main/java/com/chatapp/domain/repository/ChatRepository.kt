@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface ChatRepository {
     fun getConversations(): Flow<List<Conversation>>
+    suspend fun getConversation(conversationId: Long): Conversation?
     suspend fun createConversation(title: String, provider: ProviderType): Conversation
     suspend fun deleteConversation(conversationId: Long)
     fun getMessages(conversationId: Long): Flow<List<Message>>

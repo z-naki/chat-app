@@ -17,13 +17,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.DismissDirection
-import androidx.compose.material3.DismissValue
-import androidx.compose.material3.SwipeToDismiss
-import androidx.compose.material3.rememberDismissState
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -129,15 +128,22 @@ fun ConversationListScreen(
                     items = uiState.conversations,
                     key = { it.id }
                 ) { conversation ->
-                    val dismissState = rememberDismissState()
-                    if (dismissState.currentValue != DismissValue.Default) {
-                        viewModel.deleteConversation(conversation.id)
-                    }
-                    SwipeToDismiss(
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value == SwipeToDismissBoxValue.EndToStart) {
+                                viewModel.deleteConversation(conversation.id)
+                                true
+                            } else {
+                                false
+                            }
+                        }
+                    )
+                    SwipeToDismissBox(
                         state = dismissState,
-                        directions = setOf(DismissDirection.EndToStart),
-                        background = {},
-                        dismissContent = {
+                        enableDismissFromStartToEnd = false,
+                        enableDismissFromEndToStart = true,
+                        backgroundContent = {},
+                        content = {
                             ConversationItem(
                                 conversation = conversation,
                                 onClick = { onConversationClick(conversation.id) }

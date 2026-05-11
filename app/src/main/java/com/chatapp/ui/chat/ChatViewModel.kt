@@ -36,6 +36,10 @@ class ChatViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            val conversation = chatRepository.getConversation(conversationId)
+            _uiState.update { it.copy(conversation = conversation) }
+        }
+        viewModelScope.launch {
             chatRepository.getMessages(conversationId).collect { messages ->
                 _uiState.update { it.copy(messages = messages) }
             }
@@ -70,9 +74,15 @@ class ChatViewModel @Inject constructor(
             _uiState.update { it.copy(isStreaming = true, streamingContent = "") }
 
             streamJob = viewModelScope.launch {
+                val conversation = _uiState.value.conversation ?: run {
+                    _uiState.update {
+                        it.copy(isStreaming = false, errorMessage = "Conversation not loaded")
+                    }
+                    return@launch
+                }
                 val messages = _uiState.value.messages + userMessage
                 streamMessageUseCase(
-                    conversation = _uiState.value.conversation!!,
+                    conversation = conversation,
                     messages = messages,
                     enableSearch = _uiState.value.enableSearch
                 ).collect { chunk ->

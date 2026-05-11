@@ -30,6 +30,10 @@ class ChatRepositoryImpl @Inject constructor(
         }
     }
 
+    override suspend fun getConversation(conversationId: Long): Conversation? {
+        return conversationDao.getById(conversationId)?.toDomain()
+    }
+
     override suspend fun createConversation(title: String, provider: ProviderType): Conversation {
         val entity = ConversationEntity(
             title = title,
