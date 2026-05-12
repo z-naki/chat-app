@@ -140,12 +140,24 @@ class ChatViewModel @Inject constructor(
                         }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
-                            Log.e("ChatApp", "=== Stream DONE, content length=${_uiState.value.streamingContent.length} ===")
-                            DebugLog.log("ChatVM", "StreamChunk.Done received")
-                            val fullContent = _uiState.value.streamingContent
-                            chatRepository.updateMessageContent(streamingId, fullContent, null)
+                            val raw = _uiState.value.streamingContent
+                            val cleaned = raw.replace("null", "")
+                            Log.e("ChatApp", "=== Stream DONE, raw=${raw.length} cleaned=${cleaned.length} ===")
+                            DebugLog.log("ChatVM", "StreamChunk.Done received, content=${cleaned.length} chars")
+                            chatRepository.updateMessageContent(streamingId, cleaned, null)
+                            val completedMsg = Message(
+                                id = streamingId,
+                                conversationId = activeConversationId,
+                                role = MessageRole.ASSISTANT,
+                                content = cleaned,
+                                status = MessageStatus.COMPLETE
+                            )
                             _uiState.update {
-                                it.copy(isStreaming = false, streamingContent = "")
+                                it.copy(
+                                    isStreaming = false,
+                                    streamingContent = "",
+                                    messages = it.messages + completedMsg
+                                )
                             }
                             if (isNew) onConversationCreated?.invoke(activeConversationId)
                         }
