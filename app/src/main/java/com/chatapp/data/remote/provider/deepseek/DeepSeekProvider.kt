@@ -47,7 +47,8 @@ class DeepSeekProvider @Inject constructor(
         try {
             apiKey = securePrefs.getApiKey("DEEPSEEK")
                 ?: run {
-                    DebugLog.log("DeepSeek", "API key not configured")
+                    DebugLog.log("DeepSeek", "API key NOT configured")
+                    Log.e("ChatApp", "DEEPSEEK: API key not configured")
                     return flow {
                         emit(StreamChunk.Error(IllegalStateException("DeepSeek API Key not configured")))
                     }

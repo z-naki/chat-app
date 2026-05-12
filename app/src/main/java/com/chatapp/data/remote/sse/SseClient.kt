@@ -49,6 +49,7 @@ class SseClient @Inject constructor(
                     val code = response.code
                     val message = response.body?.string() ?: "HTTP $code"
                     DebugLog.log("SSE", "HTTP error $code: $message")
+                    android.util.Log.e("ChatApp", "SSE HTTP $code: $message")
                     trySend(SseEvent.Error(HttpException(code, message)))
                     close()
                     return

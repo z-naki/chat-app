@@ -79,6 +79,12 @@ fun ChatScreen(
         }
     }
 
+    LaunchedEffect(uiState.errorMessage) {
+        uiState.errorMessage?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
     Scaffold(
         modifier = modifier.imePadding(),
         containerColor = MaterialTheme.colorScheme.background,
