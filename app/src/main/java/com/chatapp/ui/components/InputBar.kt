@@ -32,45 +32,21 @@ fun InputBar(
     onStop: () -> Unit,
     isStreaming: Boolean,
     isFocused: Boolean,
-    placeholder: String = "Input message...",
+    placeholder: String = "Message",
     modifier: Modifier = Modifier,
     modelLabel: @Composable (() -> Unit)? = null
 ) {
+    val active = isFocused || value.isNotEmpty() || isStreaming
+
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
-        horizontalArrangement = if (isFocused || value.isNotEmpty()) {
-            Arrangement.End
-        } else {
-            Arrangement.Center
-        },
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = if (active) Arrangement.Start else Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        if (modelLabel != null) {
+        if (modelLabel != null && active) {
             modelLabel()
-        }
-
-        AnimatedVisibility(
-            visible = isFocused || value.isNotEmpty() || isStreaming,
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it })
-        ) {
-            IconButton(
-                onClick = if (isStreaming) onStop else onSend,
-                modifier = Modifier.size(40.dp)
-            ) {
-                Icon(
-                    imageVector = if (isStreaming) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
-                    contentDescription = if (isStreaming) "Stop" else "Send",
-                    tint = if (isStreaming || value.isNotBlank()) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    },
-                    modifier = Modifier.size(20.dp)
-                )
-            }
         }
 
         TextField(
@@ -83,9 +59,11 @@ fun InputBar(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
-            modifier = Modifier
-                .weight(1f, fill = false)
-                .padding(horizontal = 4.dp),
+            modifier = if (active) {
+                Modifier.weight(1f)
+            } else {
+                Modifier
+            },
             shape = RoundedCornerShape(24.dp),
             colors = TextFieldDefaults.colors(
                 focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -94,8 +72,30 @@ fun InputBar(
                 unfocusedIndicatorColor = Color.Transparent
             ),
             textStyle = MaterialTheme.typography.bodyMedium,
-            maxLines = 3,
-            singleLine = false
+            maxLines = 3
         )
+
+        AnimatedVisibility(
+            visible = active,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it })
+        ) {
+            IconButton(
+                onClick = if (isStreaming) onStop else onSend,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = if (isStreaming) Icons.Default.Close
+                    else Icons.AutoMirrored.Filled.Send,
+                    contentDescription = if (isStreaming) "Stop" else "Send",
+                    tint = if (isStreaming || value.isNotBlank()) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+        }
     }
 }

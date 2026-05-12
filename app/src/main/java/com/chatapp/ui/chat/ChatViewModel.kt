@@ -69,6 +69,7 @@ class ChatViewModel @Inject constructor(
         if (text.isBlank() || _uiState.value.isStreaming) return
 
         DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
+        Log.e("ChatApp", "=== sendMessage START: '${text.take(30)}' ===")
         _uiState.update { it.copy(inputText = "", errorMessage = null) }
 
         viewModelScope.launch {
@@ -114,6 +115,9 @@ class ChatViewModel @Inject constructor(
                 ).collect { chunk ->
                     when (chunk) {
                         is StreamChunk.Content -> {
+                            if (chunk.text.isNotEmpty()) {
+                                DebugLog.log("ChatVM", "Content: '${chunk.text.take(50)}'")
+                            }
                             _uiState.update {
                                 it.copy(
                                     streamingContent = it.streamingContent + chunk.text

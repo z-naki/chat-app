@@ -150,7 +150,8 @@ fun HomeScreen(
                                         }
                                         DropdownMenu(
                                             expanded = showMenu,
-                                            onDismissRequest = { showMenu = false }
+                                            onDismissRequest = { showMenu = false },
+                                            offset = androidx.compose.ui.unit.DpOffset(x = (-40).dp, y = 0.dp)
                                         ) {
                                             DropdownMenuItem(
                                                 text = { Text("Delete") },
@@ -194,7 +195,7 @@ fun HomeScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Chat AI v0.0.2-a",
+                            text = "Chat AI v0.0.3-a",
                             style = MaterialTheme.typography.titleLarge
                         )
                     },

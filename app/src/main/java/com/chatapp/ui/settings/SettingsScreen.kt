@@ -98,7 +98,17 @@ fun SettingsScreen(
                 )
             }
 
-            // Expand/collapse toggle for other providers
+            // Unconfigured providers (when expanded)
+            if (uiState.showOtherProviders && unconfigured.isNotEmpty()) {
+                unconfigured.forEach { provider ->
+                    ProviderRow(
+                        provider = provider,
+                        onEdit = { onEditProvider(provider) }
+                    )
+                }
+            }
+
+            // Expand/collapse toggle at the bottom
             if (unconfigured.isNotEmpty()) {
                 Row(
                     modifier = Modifier
@@ -122,15 +132,6 @@ fun SettingsScreen(
                         contentDescription = if (uiState.showOtherProviders) "Collapse" else "Expand",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                }
-
-                if (uiState.showOtherProviders) {
-                    unconfigured.forEach { provider ->
-                        ProviderRow(
-                            provider = provider,
-                            onEdit = { onEditProvider(provider) }
-                        )
-                    }
                 }
             }
 
@@ -178,7 +179,7 @@ fun SettingsScreen(
             // --- About ---
             SectionHeader("About")
             Text(
-                text = "Version 0.0.2-alpha",
+                text = "Version 0.0.3-alpha",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
