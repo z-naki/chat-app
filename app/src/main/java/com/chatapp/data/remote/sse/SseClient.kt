@@ -81,7 +81,7 @@ class SseClient @Inject constructor(
                                     close()
                                     return
                                 }
-                                android.util.Log.e("NULLDBG", "S1_SSE_RAW: ${data.take(500)}")
+                                DebugLog.log("NULL", "S1_RAW: ${data.take(300)}")
                                 trySend(SseEvent.Data(data))
                             }
                         }
@@ -89,7 +89,7 @@ class SseClient @Inject constructor(
                     // Process any remaining buffered data before closing
                     if (currentData.isNotEmpty()) {
                         val data = currentData.toString().trim()
-                        android.util.Log.e("NULLDBG", "S1_SSE_RAW_PENDING: ${data.take(500)}")
+                        DebugLog.log("NULL", "S1_PEND: ${data.take(300)}")
                         if (data == "[DONE]") {
                             trySend(SseEvent.Done)
                             close()
