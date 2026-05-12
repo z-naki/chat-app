@@ -106,6 +106,7 @@ class DeepSeekProvider @Inject constructor(
 
     private fun parseChunk(raw: String): StreamChunk {
         return try {
+            DebugLog.log("DeepSeek", "Raw SSE: ${raw.take(200)}")
             val obj = json.parseToJsonElement(raw).jsonObject
             val choices = obj["choices"]?.jsonArray ?: return StreamChunk.Content("")
 

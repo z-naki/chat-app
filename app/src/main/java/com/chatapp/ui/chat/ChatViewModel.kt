@@ -88,7 +88,12 @@ class ChatViewModel @Inject constructor(
 
             DebugLog.log("ChatVM", "Saving user message for convId=$activeConversationId")
             val userMessage = sendMessageUseCase(activeConversationId, text)
-            _uiState.update { it.copy(messages = it.messages + userMessage) }
+
+            if (isNew) {
+                _uiState.update { it.copy(messages = listOf(userMessage)) }
+            } else {
+                _uiState.update { it.copy(messages = it.messages + userMessage) }
+            }
 
             val streamingMessage = Message(
                 conversationId = activeConversationId,
@@ -107,7 +112,8 @@ class ChatViewModel @Inject constructor(
                     }
                     return@launch
                 }
-                val messages = _uiState.value.messages + userMessage
+                val messages = if (isNew) listOf(userMessage) else _uiState.value.messages
+                DebugLog.log("ChatVM", "Sending ${messages.size} messages to stream")
                 streamMessageUseCase(
                     conversation = conversation,
                     messages = messages,
