@@ -131,7 +131,13 @@ class ChatViewModel @Inject constructor(
                                 )
                             }
                         }
-                        is StreamChunk.Thinking -> { }
+                        is StreamChunk.Thinking -> {
+                            if (chunk.text.isNotEmpty()) {
+                                _uiState.update {
+                                    it.copy(streamingContent = it.streamingContent + chunk.text)
+                                }
+                            }
+                        }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
                             Log.e("ChatApp", "=== Stream DONE, content length=${_uiState.value.streamingContent.length} ===")
