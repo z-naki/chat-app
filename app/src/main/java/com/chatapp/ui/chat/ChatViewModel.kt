@@ -69,7 +69,7 @@ class ChatViewModel @Inject constructor(
         if (text.isBlank() || _uiState.value.isStreaming) return
 
         DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
-        Log.e("ChatApp", "=== sendMessage START: '${text.take(30)}' ===")
+        Log.e("ChatApp", "=== sendMessage START === ")
         _uiState.update { it.copy(inputText = "", errorMessage = null) }
 
         viewModelScope.launch {
@@ -122,6 +122,7 @@ class ChatViewModel @Inject constructor(
                     when (chunk) {
                         is StreamChunk.Content -> {
                             if (chunk.text.isNotEmpty()) {
+                                Log.e("ChatApp", "AI: ${chunk.text.take(80)}")
                                 DebugLog.log("ChatVM", "Content: '${chunk.text.take(50)}'")
                             }
                             _uiState.update {
@@ -133,6 +134,7 @@ class ChatViewModel @Inject constructor(
                         is StreamChunk.Thinking -> { }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
+                            Log.e("ChatApp", "=== Stream DONE, content length=${_uiState.value.streamingContent.length} ===")
                             DebugLog.log("ChatVM", "StreamChunk.Done received")
                             val fullContent = _uiState.value.streamingContent
                             chatRepository.updateMessageContent(streamingId, fullContent, null)
