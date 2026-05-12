@@ -61,14 +61,15 @@ class DeepSeekProvider @Inject constructor(
         }
 
         val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
-        DebugLog.log("DeepSeek", "Connecting to $baseUrl")
+        val body = buildRequestBody(request)
+        DebugLog.log("DeepSeek", "Connecting to $baseUrl, body=${body.take(300)}")
         return sseClient.connect(
             url = "$baseUrl/v1/chat/completions",
             headers = mapOf(
                 "Authorization" to "Bearer $apiKey",
                 "Content-Type" to "application/json"
             ),
-            body = buildRequestBody(request)
+            body = body
         ).map { event ->
             when (event) {
                 is SseEvent.Data -> parseChunk(event.text)
@@ -84,7 +85,7 @@ class DeepSeekProvider @Inject constructor(
             put("model", model)
             put("stream", true)
             put("max_tokens", request.maxTokens)
-            put("temperature", request.temperature.toDouble())
+            put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
             putJsonArray("messages") {
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
