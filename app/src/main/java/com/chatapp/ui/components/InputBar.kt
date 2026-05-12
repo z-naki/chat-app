@@ -1,8 +1,13 @@
 package com.chatapp.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
@@ -10,7 +15,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
@@ -27,47 +31,35 @@ fun InputBar(
     onSend: () -> Unit,
     onStop: () -> Unit,
     isStreaming: Boolean,
+    isFocused: Boolean,
     placeholder: String = "Input message...",
     modifier: Modifier = Modifier,
-    trailing: @Composable (() -> Unit)? = null
+    modelLabel: @Composable (() -> Unit)? = null
 ) {
-    Surface(
-        modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 1.dp
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = if (isFocused || value.isNotEmpty()) {
+            Arrangement.End
+        } else {
+            Arrangement.Center
+        },
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .padding(horizontal = 8.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically
+        if (modelLabel != null) {
+            modelLabel()
+        }
+
+        AnimatedVisibility(
+            visible = isFocused || value.isNotEmpty() || isStreaming,
+            enter = slideInHorizontally(initialOffsetX = { it }),
+            exit = slideOutHorizontally(targetOffsetX = { it })
         ) {
-            if (trailing != null) {
-                trailing()
-            }
-
-            TextField(
-                value = value,
-                onValueChange = onValueChange,
-                placeholder = {
-                    Text(
-                        text = placeholder,
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                },
-                modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(28.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                ),
-                textStyle = MaterialTheme.typography.bodyLarge,
-                maxLines = 4
-            )
-
-            IconButton(onClick = if (isStreaming) onStop else onSend) {
+            IconButton(
+                onClick = if (isStreaming) onStop else onSend,
+                modifier = Modifier.size(40.dp)
+            ) {
                 Icon(
                     imageVector = if (isStreaming) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
                     contentDescription = if (isStreaming) "Stop" else "Send",
@@ -75,9 +67,35 @@ fun InputBar(
                         MaterialTheme.colorScheme.primary
                     } else {
                         MaterialTheme.colorScheme.onSurfaceVariant
-                    }
+                    },
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
+
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            placeholder = {
+                Text(
+                    text = placeholder,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            },
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .padding(horizontal = 4.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f),
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent
+            ),
+            textStyle = MaterialTheme.typography.bodyMedium,
+            maxLines = 3,
+            singleLine = false
+        )
     }
 }

@@ -10,6 +10,7 @@ import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.StreamChunk
 import com.chatapp.domain.repository.ChatRepository
 import com.chatapp.util.DebugLog
+import android.util.Log
 import com.chatapp.domain.usecase.SendMessageUseCase
 import com.chatapp.domain.usecase.StreamMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -122,6 +123,7 @@ class ChatViewModel @Inject constructor(
                         is StreamChunk.Thinking -> { }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
+                            DebugLog.log("ChatVM", "StreamChunk.Done received")
                             val fullContent = _uiState.value.streamingContent
                             chatRepository.updateMessageContent(streamingId, fullContent, null)
                             _uiState.update {
@@ -130,6 +132,8 @@ class ChatViewModel @Inject constructor(
                             if (isNew) onConversationCreated?.invoke(activeConversationId)
                         }
                         is StreamChunk.Error -> {
+                            Log.e("ChatApp", "Stream error: ${chunk.throwable.message}")
+                            DebugLog.log("ChatVM", "StreamChunk.Error: ${chunk.throwable.message}")
                             chatRepository.updateMessageContent(
                                 streamingId,
                                 _uiState.value.streamingContent,

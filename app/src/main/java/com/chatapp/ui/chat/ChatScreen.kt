@@ -1,7 +1,9 @@
 package com.chatapp.ui.chat
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -150,14 +152,31 @@ fun ChatScreen(
             }
         },
         bottomBar = {
-            InputBar(
-                value = uiState.inputText,
-                onValueChange = { viewModel.onInputChange(it) },
-                onSend = { viewModel.sendMessage() },
-                onStop = { viewModel.stopGeneration() },
-                isStreaming = uiState.isStreaming,
-                placeholder = "Input message..."
-            )
+            val focusManager = LocalFocusManager.current
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    val providerName = uiState.conversation?.provider?.displayName ?: "DeepSeek"
+                    Text(
+                        text = providerName,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                InputBar(
+                    value = uiState.inputText,
+                    onValueChange = { viewModel.onInputChange(it) },
+                    onSend = { viewModel.sendMessage(); focusManager.clearFocus() },
+                    onStop = { viewModel.stopGeneration() },
+                    isStreaming = uiState.isStreaming,
+                    isFocused = uiState.inputText.isNotEmpty(),
+                    placeholder = "Message"
+                )
+            }
         }
     ) { padding ->
         LazyColumn(
