@@ -67,7 +67,7 @@ fun HomeScreen(
     val convUiState by convListViewModel.uiState.collectAsStateWithLifecycle()
     var deleteConfirmId by remember { mutableStateOf<Long?>(null) }
 
-    var showDebugPanel by remember { mutableStateOf(true) }
+    var showDebugPanel by remember { mutableStateOf(false) }
     val grouped = groupByDay(convUiState.conversations)
 
     ModalNavigationDrawer(
@@ -195,7 +195,7 @@ fun HomeScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Chat AI v0.0.9-a",
+                            text = "Chat AI v0.0.10-a",
                             style = MaterialTheme.typography.titleLarge
                         )
                     },

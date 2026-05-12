@@ -70,7 +70,7 @@ class ChatViewModel @Inject constructor(
 
         DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
         Log.e("ChatApp", "=== sendMessage START === ")
-        _uiState.update { it.copy(inputText = "", errorMessage = null) }
+        _uiState.update { it.copy(inputText = "", isStreaming = true, streamingContent = "", errorMessage = null) }
 
         viewModelScope.launch {
             var activeConversationId = conversationId
@@ -103,7 +103,6 @@ class ChatViewModel @Inject constructor(
             )
             val streamingId = chatRepository.saveMessage(streamingMessage)
 
-            _uiState.update { it.copy(isStreaming = true, streamingContent = "") }
             streamJob?.cancel()
             streamJob = viewModelScope.launch {
                 val conversation = _uiState.value.conversation ?: run {
@@ -140,11 +139,10 @@ class ChatViewModel @Inject constructor(
                         }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
-                            val raw = _uiState.value.streamingContent
-                            val cleaned = raw.replace("null", "")
-                            Log.e("ChatApp", "=== Stream DONE, raw=${raw.length} cleaned=${cleaned.length} ===")
-                            DebugLog.log("ChatVM", "StreamChunk.Done received, content=${cleaned.length} chars")
-                            chatRepository.updateMessageContent(streamingId, cleaned, null)
+                            val fullContent = _uiState.value.streamingContent
+                            Log.e("ChatApp", "=== Stream DONE, content=${fullContent.length} chars ===")
+                            DebugLog.log("ChatVM", "StreamChunk.Done received")
+                            chatRepository.updateMessageContent(streamingId, fullContent, null)
                             val completedMsg = Message(
                                 id = streamingId,
                                 conversationId = activeConversationId,
@@ -156,7 +154,7 @@ class ChatViewModel @Inject constructor(
                                 it.copy(
                                     isStreaming = false,
                                     streamingContent = "",
-                                    messages = it.messages + completedMsg
+                                    messages = it.messages.filterNot { m -> m.id == streamingId } + completedMsg
                                 )
                             }
                             if (isNew) onConversationCreated?.invoke(activeConversationId)
@@ -186,8 +184,16 @@ class ChatViewModel @Inject constructor(
 
     fun stopGeneration() {
         streamJob?.cancel()
+        val partial = _uiState.value.streamingContent
         _uiState.update {
             it.copy(isStreaming = false, streamingContent = "")
+        }
+        // Try to find and save the streaming message
+        val streamingMsg = _uiState.value.messages.lastOrNull { it.status == MessageStatus.STREAMING }
+        if (streamingMsg != null && partial.isNotEmpty()) {
+            viewModelScope.launch {
+                chatRepository.updateMessageContent(streamingMsg.id, partial, null)
+            }
         }
     }
 

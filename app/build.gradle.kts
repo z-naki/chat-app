@@ -15,8 +15,8 @@ android {
         applicationId = "com.chatapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 9
-        versionName = "0.0.9-alpha"
+        versionCode = 10
+        versionName = "0.0.10-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
