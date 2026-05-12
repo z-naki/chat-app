@@ -71,14 +71,14 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             // Auto-create conversation if this is a new conversation
             var activeConversationId = conversationId
-            if (activeConversationId <= 0) {
+            val isNew = activeConversationId <= 0
+            if (isNew) {
                 val newConv = chatRepository.createConversation(
                     title = text.take(50),
                     provider = ProviderType.DEEPSEEK
                 )
                 activeConversationId = newConv.id
                 _uiState.update { it.copy(conversation = newConv) }
-                onConversationCreated?.invoke(activeConversationId)
             }
 
             val userMessage = sendMessageUseCase(activeConversationId, text)
@@ -122,6 +122,7 @@ class ChatViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(isStreaming = false, streamingContent = "")
                             }
+                            if (isNew) onConversationCreated?.invoke(activeConversationId)
                         }
                         is StreamChunk.Error -> {
                             chatRepository.updateMessageContent(
@@ -136,6 +137,7 @@ class ChatViewModel @Inject constructor(
                                     errorMessage = chunk.throwable.message ?: "Unknown error"
                                 )
                             }
+                            if (isNew) onConversationCreated?.invoke(activeConversationId)
                         }
                     }
                 }
