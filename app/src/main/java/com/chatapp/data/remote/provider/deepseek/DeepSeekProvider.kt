@@ -119,10 +119,10 @@ class DeepSeekProvider @Inject constructor(
                 val thinkingElem = delta["reasoning_content"]
                 val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
                 val thinking = thinkingElem?.jsonPrimitive?.content
-                val thinkingStr = if (thinking == null) "<NULL>" else "'$thinking'"
+                val thinkingStr = if (thinking == null) "<NULL>" else "'${thinking.take(50)}'"
                 DebugLog.log("NULL", "S2_THINK class=$thinkingClass val=$thinkingStr")
 
-                if (!thinking.isNullOrEmpty()) {
+                if (!thinking.isNullOrEmpty() && thinking != "null") {
                     DebugLog.log("NULL", "S4_RET Thinking('${thinking.take(100)}')")
                     return StreamChunk.Thinking(thinking)
                 }
