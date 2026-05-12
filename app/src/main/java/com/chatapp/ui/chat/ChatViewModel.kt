@@ -82,6 +82,7 @@ class ChatViewModel @Inject constructor(
             }
 
             val userMessage = sendMessageUseCase(activeConversationId, text)
+            _uiState.update { it.copy(messages = it.messages + userMessage) }
 
             val streamingMessage = Message(
                 conversationId = activeConversationId,

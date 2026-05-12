@@ -13,6 +13,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.ArrowDropUp
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -85,11 +87,51 @@ fun SettingsScreen(
             // --- API Key / Token ---
             SectionHeader("API Key / Token")
 
-            ProviderType.entries.forEach { provider ->
+            val configured = uiState.configuredProviders
+            val unconfigured = ProviderType.entries.filter { it !in configured }
+
+            // Show configured providers
+            configured.forEach { provider ->
                 ProviderRow(
                     provider = provider,
                     onEdit = { onEditProvider(provider) }
                 )
+            }
+
+            // Expand/collapse toggle for other providers
+            if (unconfigured.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { viewModel.toggleOtherProviders() }
+                        .padding(vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Add Provider",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Icon(
+                        imageVector = if (uiState.showOtherProviders) {
+                            Icons.Default.ArrowDropUp
+                        } else {
+                            Icons.Default.ArrowDropDown
+                        },
+                        contentDescription = if (uiState.showOtherProviders) "Collapse" else "Expand",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+
+                if (uiState.showOtherProviders) {
+                    unconfigured.forEach { provider ->
+                        ProviderRow(
+                            provider = provider,
+                            onEdit = { onEditProvider(provider) }
+                        )
+                    }
+                }
             }
 
             HorizontalDivider(

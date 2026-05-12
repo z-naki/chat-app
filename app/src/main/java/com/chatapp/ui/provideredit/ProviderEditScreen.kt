@@ -81,48 +81,19 @@ fun ProviderEditScreen(
         ) {
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Provider selector
+            // Provider display (plain text, not expandable)
             Text(
                 text = "Provider",
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable { viewModel.toggleProviderDropdown() }
-                    .padding(vertical = 12.dp, horizontal = 4.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = uiState.selectedProvider.displayName,
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Icon(
-                    imageVector = Icons.Default.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            DropdownMenu(
-                expanded = uiState.providerExpanded,
-                onDismissRequest = { viewModel.toggleProviderDropdown() }
-            ) {
-                ProviderType.entries.forEach { provider ->
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                text = provider.displayName,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                        },
-                        onClick = { viewModel.onProviderSelect(provider) }
-                    )
-                }
-            }
+            Text(
+                text = uiState.selectedProvider.displayName,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(vertical = 12.dp, horizontal = 4.dp)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 

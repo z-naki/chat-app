@@ -14,7 +14,11 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -24,12 +28,16 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -53,6 +61,7 @@ fun HomeScreen(
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val convUiState by convListViewModel.uiState.collectAsStateWithLifecycle()
+    var deleteConfirmId by remember { mutableStateOf<Long?>(null) }
 
     val grouped = groupByDay(convUiState.conversations)
 
@@ -94,6 +103,7 @@ fun HomeScreen(
                                     items = group.conversations,
                                     key = { it.id }
                                 ) { conversation ->
+                                    var showMenu by remember { mutableStateOf(false) }
                                     Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -101,7 +111,7 @@ fun HomeScreen(
                                                 onConversationClick(conversation.id)
                                                 scope.launch { drawerState.close() }
                                             }
-                                            .padding(vertical = 8.dp),
+                                            .padding(vertical = 6.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
@@ -121,6 +131,28 @@ fun HomeScreen(
                                                 text = conversation.provider.displayName,
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        IconButton(
+                                            onClick = { showMenu = true },
+                                            modifier = Modifier.padding(start = 4.dp)
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.MoreVert,
+                                                contentDescription = "More",
+                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                        DropdownMenu(
+                                            expanded = showMenu,
+                                            onDismissRequest = { showMenu = false }
+                                        ) {
+                                            DropdownMenuItem(
+                                                text = { Text("Delete") },
+                                                onClick = {
+                                                    showMenu = false
+                                                    deleteConfirmId = conversation.id
+                                                }
                                             )
                                         }
                                     }
@@ -181,12 +213,40 @@ fun HomeScreen(
         ) { padding ->
             ChatScreen(
                 conversationId = -1L,
-                onBack = {}, // no back action on home
+                onBack = {},
                 modifier = Modifier.padding(padding)
             )
         }
     }
+
+    // Delete confirmation dialog
+    deleteConfirmId?.let { id ->
+        AlertDialog(
+            onDismissRequest = { deleteConfirmId = null },
+            title = { Text("Delete Conversation") },
+            text = { Text("Are you sure you want to delete this conversation? All messages will be removed.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    convListViewModel.deleteConversation(id)
+                    deleteConfirmId = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { deleteConfirmId = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
 }
+
+private data class DayGroup(
+    val dateLabel: String,
+    val conversations: List<Conversation>,
+    val sortKey: Int = 0
+)
 
 private fun groupByDay(conversations: List<Conversation>): List<DayGroup> {
     val fmt = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -206,9 +266,3 @@ private fun groupByDay(conversations: List<Conversation>): List<DayGroup> {
         .sortedBy { it.sortKey }
         .map { it.copy(sortKey = 0) }
 }
-
-private data class DayGroup(
-    val dateLabel: String,
-    val conversations: List<Conversation>,
-    val sortKey: Int = 0
-)

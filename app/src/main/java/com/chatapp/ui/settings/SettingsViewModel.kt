@@ -2,6 +2,7 @@ package com.chatapp.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,6 +36,20 @@ class SettingsViewModel @Inject constructor(
                 _uiState.update { it.copy(proxyAddress = addr) }
             }
         }
+        loadConfiguredProviders()
+    }
+
+    fun loadConfiguredProviders() {
+        viewModelScope.launch {
+            val configured = ProviderType.entries.filter {
+                !settingsRepository.getApiKey(it).isNullOrBlank()
+            }.toSet()
+            _uiState.update { it.copy(configuredProviders = configured) }
+        }
+    }
+
+    fun toggleOtherProviders() {
+        _uiState.update { it.copy(showOtherProviders = !it.showOtherProviders) }
     }
 
     fun setThemeMode(mode: String) {
