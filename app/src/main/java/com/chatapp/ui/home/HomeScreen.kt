@@ -195,7 +195,7 @@ fun HomeScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Chat AI v0.0.8-a",
+                            text = "Chat AI v0.0.9-a",
                             style = MaterialTheme.typography.titleLarge
                         )
                     },

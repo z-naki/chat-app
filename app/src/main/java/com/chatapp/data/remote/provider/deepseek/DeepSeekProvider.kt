@@ -122,8 +122,11 @@ class DeepSeekProvider @Inject constructor(
                 }
 
                 val content = delta["content"]?.jsonPrimitive?.content
-                if (!content.isNullOrEmpty() && content != "null") {
-                    return StreamChunk.Content(content)
+                if (!content.isNullOrEmpty()) {
+                    val cleaned = content.replace("null", "")
+                    if (cleaned.isNotEmpty()) {
+                        return StreamChunk.Content(cleaned)
+                    }
                 }
             }
 
