@@ -121,19 +121,25 @@ class ChatViewModel @Inject constructor(
                     when (chunk) {
                         is StreamChunk.Content -> {
                             if (chunk.text.isNotEmpty()) {
+                                android.util.Log.e("NULLDBG", "S5_CVM_Content text='${chunk.text.take(100)}'")
                                 Log.e("ChatApp", "AI: ${chunk.text.take(80)}")
                                 DebugLog.log("ChatVM", "Content: '${chunk.text.take(50)}'")
+                            } else {
+                                android.util.Log.e("NULLDBG", "S5_CVM_Content text=EMPTY")
                             }
                             _uiState.update {
-                                it.copy(
-                                    streamingContent = it.streamingContent + chunk.text
-                                )
+                                val newContent = it.streamingContent + chunk.text
+                                android.util.Log.e("NULLDBG", "S6_STREAM_ACCUM len=${newContent.length} tail='${newContent.takeLast(50)}'")
+                                it.copy(streamingContent = newContent)
                             }
                         }
                         is StreamChunk.Thinking -> {
                             if (chunk.text.isNotEmpty()) {
+                                android.util.Log.e("NULLDBG", "S5_CVM_Thinking text='${chunk.text.take(100)}'")
                                 _uiState.update {
-                                    it.copy(streamingContent = it.streamingContent + chunk.text)
+                                    val newContent = it.streamingContent + chunk.text
+                                    android.util.Log.e("NULLDBG", "S6_STREAM_ACCUM len=${newContent.length} tail='${newContent.takeLast(50)}'")
+                                    it.copy(streamingContent = newContent)
                                 }
                             }
                         }

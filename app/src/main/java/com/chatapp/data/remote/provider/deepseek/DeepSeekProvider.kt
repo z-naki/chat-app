@@ -116,17 +116,34 @@ class DeepSeekProvider @Inject constructor(
                 val delta = choiceObj["delta"]?.jsonObject ?: continue
 
                 // Check for thinking content (deepseek-v4-pro may emit reasoning)
-                val thinking = delta["reasoning_content"]?.jsonPrimitive?.content
+                val thinkingElem = delta["reasoning_content"]
+                val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
+                val thinking = thinkingElem?.jsonPrimitive?.content
+                val thinkingStr = if (thinking == null) "<NULL>" else "'$thinking'"
+                android.util.Log.e("NULLDBG", "S2_THINK class=$thinkingClass val=$thinkingStr")
+
                 if (!thinking.isNullOrEmpty()) {
-                    return StreamChunk.Thinking(thinking)
+                    val result = StreamChunk.Thinking(thinking)
+                    android.util.Log.e("NULLDBG", "S4_RETURN Thinking('${thinking.take(100)}')")
+                    return result
                 }
 
-                val content = delta["content"]?.jsonPrimitive?.content
+                val contentElem = delta["content"]
+                val contentClass = contentElem?.javaClass?.simpleName ?: "null"
+                val content = contentElem?.jsonPrimitive?.content
+                val contentStr = if (content == null) "<NULL>" else "'$content'"
+                android.util.Log.e("NULLDBG", "S3_CONTENT class=$contentClass val=$contentStr")
+
                 if (!content.isNullOrEmpty() && content != "null") {
-                    return StreamChunk.Content(content)
+                    val result = StreamChunk.Content(content)
+                    android.util.Log.e("NULLDBG", "S4_RETURN Content('${content.take(100)}')")
+                    return result
+                } else {
+                    android.util.Log.e("NULLDBG", "S3_SKIP: emptyOrNull=${content.isNullOrEmpty()} isNullStr=${content == "null"}")
                 }
             }
 
+            android.util.Log.e("NULLDBG", "S4_RETURN Content(EMPTY)")
             StreamChunk.Content("")
         } catch (e: Exception) {
             Log.e("DeepSeekProvider", "Failed to parse SSE chunk", e)
