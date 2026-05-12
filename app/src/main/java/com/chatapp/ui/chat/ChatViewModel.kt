@@ -147,7 +147,7 @@ class ChatViewModel @Inject constructor(
                                 id = streamingId,
                                 conversationId = activeConversationId,
                                 role = MessageRole.ASSISTANT,
-                                content = cleaned,
+                                content = fullContent,
                                 status = MessageStatus.COMPLETE
                             )
                             _uiState.update {
