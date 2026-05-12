@@ -9,6 +9,7 @@ import com.chatapp.domain.model.MessageStatus
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.StreamChunk
 import com.chatapp.domain.repository.ChatRepository
+import com.chatapp.util.DebugLog
 import com.chatapp.domain.usecase.SendMessageUseCase
 import com.chatapp.domain.usecase.StreamMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -66,21 +67,24 @@ class ChatViewModel @Inject constructor(
         val text = _uiState.value.inputText.trim()
         if (text.isBlank() || _uiState.value.isStreaming) return
 
+        DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
         _uiState.update { it.copy(inputText = "", errorMessage = null) }
 
         viewModelScope.launch {
-            // Auto-create conversation if this is a new conversation
             var activeConversationId = conversationId
             val isNew = activeConversationId <= 0
             if (isNew) {
+                DebugLog.log("ChatVM", "Auto-creating conversation...")
                 val newConv = chatRepository.createConversation(
                     title = text.take(50),
                     provider = ProviderType.DEEPSEEK
                 )
                 activeConversationId = newConv.id
                 _uiState.update { it.copy(conversation = newConv) }
+                DebugLog.log("ChatVM", "Auto-created convId=$activeConversationId")
             }
 
+            DebugLog.log("ChatVM", "Saving user message for convId=$activeConversationId")
             val userMessage = sendMessageUseCase(activeConversationId, text)
             _uiState.update { it.copy(messages = it.messages + userMessage) }
 

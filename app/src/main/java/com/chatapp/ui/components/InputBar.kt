@@ -34,11 +34,11 @@ fun InputBar(
     Surface(
         modifier = modifier.fillMaxWidth(),
         color = MaterialTheme.colorScheme.surface,
-        tonalElevation = 2.dp
+        tonalElevation = 1.dp
     ) {
         Row(
             modifier = Modifier
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (trailing != null) {
@@ -56,39 +56,27 @@ fun InputBar(
                     )
                 },
                 modifier = Modifier.weight(1f),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = TextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent
                 ),
+                textStyle = MaterialTheme.typography.bodyLarge,
                 maxLines = 4
             )
 
-            if (isStreaming) {
-                IconButton(onClick = onStop) {
-                    Icon(
-                        imageVector = Icons.Default.Close,
-                        contentDescription = "Stop generation",
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
-                }
-            } else {
-                IconButton(
-                    onClick = onSend,
-                    enabled = value.isNotBlank()
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send message",
-                        tint = if (value.isNotBlank()) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                    )
-                }
+            IconButton(onClick = if (isStreaming) onStop else onSend) {
+                Icon(
+                    imageVector = if (isStreaming) Icons.Default.Close else Icons.AutoMirrored.Filled.Send,
+                    contentDescription = if (isStreaming) "Stop" else "Send",
+                    tint = if (isStreaming || value.isNotBlank()) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                )
             }
         }
     }

@@ -9,6 +9,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import com.chatapp.util.DebugLog
 import okhttp3.Response
 import java.io.BufferedReader
 import java.io.IOException
@@ -43,9 +44,11 @@ class SseClient @Inject constructor(
             }
 
             override fun onResponse(call: Call, response: Response) {
+                DebugLog.log("SSE", "Response received: ${response.code}")
                 if (!response.isSuccessful) {
                     val code = response.code
                     val message = response.body?.string() ?: "HTTP $code"
+                    DebugLog.log("SSE", "HTTP error $code: $message")
                     trySend(SseEvent.Error(HttpException(code, message)))
                     close()
                     return

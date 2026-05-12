@@ -2,6 +2,7 @@ package com.chatapp.data.remote.provider.deepseek
 
 import android.util.Log
 import com.chatapp.data.local.prefs.SecurePrefs
+import com.chatapp.util.DebugLog
 import com.chatapp.data.remote.provider.AiProvider
 import com.chatapp.data.remote.sse.SseClient
 import com.chatapp.data.remote.sse.SseEvent
@@ -41,20 +42,25 @@ class DeepSeekProvider @Inject constructor(
     }
 
     override fun stream(request: ChatRequest): Flow<StreamChunk> {
+        DebugLog.log("DeepSeek", "stream() called with ${request.messages.size} messages")
         val apiKey: String
         try {
             apiKey = securePrefs.getApiKey("DEEPSEEK")
-                ?: return flow {
-                    emit(StreamChunk.Error(IllegalStateException("DeepSeek API Key not configured")))
+                ?: run {
+                    DebugLog.log("DeepSeek", "API key not configured")
+                    return flow {
+                        emit(StreamChunk.Error(IllegalStateException("DeepSeek API Key not configured")))
+                    }
                 }
         } catch (e: Exception) {
-            Log.w("DeepSeekProvider", "Error retrieving API key")
+            DebugLog.log("DeepSeek", "Error retrieving API key: ${e.message}")
             return flow {
                 emit(StreamChunk.Error(e))
             }
         }
 
         val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
+        DebugLog.log("DeepSeek", "Connecting to $baseUrl")
         return sseClient.connect(
             url = "$baseUrl/v1/chat/completions",
             headers = mapOf(

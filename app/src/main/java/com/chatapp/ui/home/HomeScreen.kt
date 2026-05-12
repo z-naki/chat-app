@@ -1,10 +1,13 @@
 package com.chatapp.ui.home
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -46,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chatapp.domain.model.Conversation
 import com.chatapp.ui.chat.ChatScreen
 import com.chatapp.ui.conversationlist.ConversationListViewModel
+import com.chatapp.util.DebugLog
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -63,6 +67,7 @@ fun HomeScreen(
     val convUiState by convListViewModel.uiState.collectAsStateWithLifecycle()
     var deleteConfirmId by remember { mutableStateOf<Long?>(null) }
 
+    var showDebugPanel by remember { mutableStateOf(false) }
     val grouped = groupByDay(convUiState.conversations)
 
     ModalNavigationDrawer(
@@ -203,6 +208,16 @@ fun HomeScreen(
                             )
                         }
                     },
+                    actions = {
+                        IconButton(onClick = { showDebugPanel = !showDebugPanel }) {
+                            Icon(
+                                imageVector = Icons.Default.Menu,
+                                contentDescription = "Debug",
+                                tint = if (showDebugPanel) MaterialTheme.colorScheme.primary
+                                else MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
                         containerColor = MaterialTheme.colorScheme.background,
                         titleContentColor = MaterialTheme.colorScheme.onBackground
@@ -211,6 +226,9 @@ fun HomeScreen(
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
+            if (showDebugPanel) {
+                DebugPanelContent()
+            }
             ChatScreen(
                 conversationId = -1L,
                 onBack = {},
@@ -265,4 +283,27 @@ private fun groupByDay(conversations: List<Conversation>): List<DayGroup> {
         }
         .sortedBy { it.sortKey }
         .map { it.copy(sortKey = 0) }
+}
+
+@Composable
+private fun DebugPanelContent() {
+    val entries by DebugLog.entries.collectAsStateWithLifecycle()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(200.dp)
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.95f))
+            .padding(8.dp)
+    ) {
+        LazyColumn(modifier = Modifier.fillMaxSize()) {
+            items(entries.reversed()) { entry ->
+                Text(
+                    text = entry,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 1.dp)
+                )
+            }
+        }
+    }
 }
