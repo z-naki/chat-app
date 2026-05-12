@@ -178,7 +178,7 @@ fun SettingsScreen(
             // --- About ---
             SectionHeader("About")
             Text(
-                text = "Version 1.0.0",
+                text = "Version 0.0.1-alpha",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
