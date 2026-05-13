@@ -199,10 +199,14 @@ fun ChatScreen(
                 )
             }
 
-            if (uiState.isStreaming && uiState.streamingContent.isNotEmpty()) {
+            if (uiState.isStreaming && (uiState.streamingOutput.isNotEmpty() || uiState.streamingThinking.isNotEmpty())) {
                 item(key = "streaming") {
                     StreamingBubble(
-                        content = uiState.streamingContent,
+                        output = uiState.streamingOutput,
+                        thinking = uiState.streamingThinking,
+                        isThinkingCollapsed = uiState.isThinkingCollapsed,
+                        thinkingTokenCount = uiState.thinkingTokenCount,
+                        onToggleThinking = { viewModel.toggleThinkingCollapse() },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 4.dp)

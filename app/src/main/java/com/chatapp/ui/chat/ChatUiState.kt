@@ -8,7 +8,10 @@ data class ChatUiState(
     val messages: List<Message> = emptyList(),
     val inputText: String = "",
     val isStreaming: Boolean = false,
-    val streamingContent: String = "",
+    val streamingOutput: String = "",
+    val streamingThinking: String = "",
+    val isThinkingCollapsed: Boolean = false,
+    val thinkingTokenCount: Long = 0,
     val enableSearch: Boolean = false,
     val errorMessage: String? = null
 )

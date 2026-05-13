@@ -69,7 +69,7 @@ class ChatViewModel @Inject constructor(
 
         DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
         DebugLog.log("VM", "=== sendMessage START ===")
-        _uiState.update { it.copy(inputText = "", isStreaming = true, streamingContent = "", errorMessage = null) }
+        _uiState.update { it.copy(inputText = "", isStreaming = true, streamingOutput = "", streamingThinking = "", isThinkingCollapsed = false, thinkingTokenCount = 0, errorMessage = null) }
 
         viewModelScope.launch {
             var activeConversationId = conversationId
@@ -126,11 +126,11 @@ class ChatViewModel @Inject constructor(
                                 DebugLog.log("NULL", "S5_SKIP nullContent len=${chunk.text.length}")
                             }
                             _uiState.update {
-                                val newContent = it.streamingContent + safe
+                                val newContent = it.streamingOutput + safe
                                 if (safe.isEmpty()) {
                                     DebugLog.log("NULL", "S6_ACC len=${newContent.length} (no change)")
                                 }
-                                it.copy(streamingContent = newContent)
+                                it.copy(streamingOutput = newContent)
                             }
                         }
                         is StreamChunk.Thinking -> {
@@ -138,8 +138,11 @@ class ChatViewModel @Inject constructor(
                             if (safe.isNotEmpty()) {
                                 DebugLog.log("NULL", "S5_THK+ txt='${safe.take(80)}'")
                                 _uiState.update {
-                                    val newContent = it.streamingContent + safe
-                                    it.copy(streamingContent = newContent)
+                                    val newThinking = it.streamingThinking + safe
+                                    it.copy(
+                                        streamingThinking = newThinking,
+                                        thinkingTokenCount = (newThinking.length / 2.5).toLong()
+                                    )
                                 }
                             } else if (chunk.text.isNotEmpty()) {
                                 DebugLog.log("NULL", "S5_SKIP nullThink len=${chunk.text.length}")
@@ -147,9 +150,10 @@ class ChatViewModel @Inject constructor(
                         }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
-                            val raw = _uiState.value.streamingContent
-                            val fullContent = raw.replace("null", "")
-                            DebugLog.log("VM", "=== Stream DONE, raw=${raw.length} clean=${fullContent.length} ===")
+                            val rawOutput = _uiState.value.streamingOutput
+                            val fullContent = rawOutput.replace("null", "")
+                            val rawThinking = _uiState.value.streamingThinking
+                            DebugLog.log("VM", "=== Stream DONE, think=${rawThinking.length} output=${rawOutput.length} clean=${fullContent.length} ===")
                             DebugLog.log("ChatVM", "StreamChunk.Done received")
                             chatRepository.updateMessageContent(streamingId, fullContent, null)
                             val completedMsg = Message(
@@ -162,7 +166,10 @@ class ChatViewModel @Inject constructor(
                             _uiState.update {
                                 it.copy(
                                     isStreaming = false,
-                                    streamingContent = "",
+                                    streamingOutput = "",
+                                    streamingThinking = "",
+                                    isThinkingCollapsed = false,
+                                    thinkingTokenCount = 0,
                                     messages = it.messages.filterNot { m -> m.id == streamingId } + completedMsg
                                 )
                             }
@@ -173,13 +180,14 @@ class ChatViewModel @Inject constructor(
                             DebugLog.log("ChatVM", "StreamChunk.Error: ${chunk.throwable.message}")
                             chatRepository.updateMessageContent(
                                 streamingId,
-                                _uiState.value.streamingContent,
+                                _uiState.value.streamingOutput,
                                 null
                             )
                             _uiState.update {
                                 it.copy(
                                     isStreaming = false,
-                                    streamingContent = "",
+                                    streamingOutput = "",
+                                    streamingThinking = "",
                                     errorMessage = chunk.throwable.message ?: "Unknown error"
                                 )
                             }
@@ -193,17 +201,20 @@ class ChatViewModel @Inject constructor(
 
     fun stopGeneration() {
         streamJob?.cancel()
-        val partial = _uiState.value.streamingContent
+        val partial = _uiState.value.streamingOutput
         _uiState.update {
-            it.copy(isStreaming = false, streamingContent = "")
+            it.copy(isStreaming = false, streamingOutput = "", streamingThinking = "")
         }
-        // Try to find and save the streaming message
         val streamingMsg = _uiState.value.messages.lastOrNull { it.status == MessageStatus.STREAMING }
         if (streamingMsg != null && partial.isNotEmpty()) {
             viewModelScope.launch {
                 chatRepository.updateMessageContent(streamingMsg.id, partial, null)
             }
         }
+    }
+
+    fun toggleThinkingCollapse() {
+        _uiState.update { it.copy(isThinkingCollapsed = !it.isThinkingCollapsed) }
     }
 
     fun updateParameters(temperature: Float, maxTokens: String, contextRounds: String) {
