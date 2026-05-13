@@ -113,10 +113,19 @@ class DeepSeekProvider @Inject constructor(
 
             for (choice in choices) {
                 val choiceObj = choice.jsonObject
-                val delta = choiceObj["delta"]?.jsonObject ?: continue
+                val delta = choiceObj["delta"]?.jsonObject
+                val message = choiceObj["message"]?.jsonObject
+
+                // Dump ALL keys in choice and delta/message for diagnosis
+                DebugLog.log("NULL", "S0_choice keys=${choiceObj.keys}")
+                if (delta != null) DebugLog.log("NULL", "S0_delta keys=${delta.keys} vals=${delta.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+                if (message != null) DebugLog.log("NULL", "S0_msg keys=${message.keys} vals=${message.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+
+                if (delta == null && message == null) continue
+                val active = delta ?: message ?: continue
 
                 // Check for thinking content (deepseek-v4-pro may emit reasoning)
-                val thinkingElem = delta["reasoning_content"]
+                val thinkingElem = active["reasoning_content"]
                 val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
                 val thinking = thinkingElem?.jsonPrimitive?.content
                 val thinkingStr = if (thinking == null) "<NULL>" else "'${thinking.take(50)}'"
@@ -127,7 +136,7 @@ class DeepSeekProvider @Inject constructor(
                     return StreamChunk.Thinking(thinking)
                 }
 
-                val contentElem = delta["content"]
+                val contentElem = active["content"]
                 val contentClass = contentElem?.javaClass?.simpleName ?: "null"
                 val content = contentElem?.jsonPrimitive?.content
                 val contentStr = if (content == null) "<NULL>" else "'$content'"
