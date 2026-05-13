@@ -81,7 +81,7 @@ class SseClient @Inject constructor(
                                     close()
                                     return
                                 }
-                                DebugLog.log("NULL", "S1_RAW: ${data.take(300)}")
+                                android.util.Log.e("ChatApp", "S1_RAW: ${data.take(300)}")
                                 trySend(SseEvent.Data(data))
                             }
                         }

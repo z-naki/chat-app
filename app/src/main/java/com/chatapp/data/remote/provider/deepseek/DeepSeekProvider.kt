@@ -117,9 +117,9 @@ class DeepSeekProvider @Inject constructor(
                 val message = choiceObj["message"]?.jsonObject
 
                 // Dump ALL keys in choice and delta/message for diagnosis
-                DebugLog.log("NULL", "S0_choice keys=${choiceObj.keys}")
-                if (delta != null) DebugLog.log("NULL", "S0_delta keys=${delta.keys} vals=${delta.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
-                if (message != null) DebugLog.log("NULL", "S0_msg keys=${message.keys} vals=${message.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+                Log.e("ChatApp", "S0_choice keys=${choiceObj.keys}")
+                if (delta != null) Log.e("ChatApp", "S0_delta keys=${delta.keys} vals=${delta.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+                if (message != null) Log.e("ChatApp", "S0_msg keys=${message.keys} vals=${message.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
 
                 if (delta == null && message == null) continue
                 val active = delta ?: message ?: continue
@@ -129,10 +129,10 @@ class DeepSeekProvider @Inject constructor(
                 val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
                 val thinking = thinkingElem?.jsonPrimitive?.content
                 val thinkingStr = if (thinking == null) "<NULL>" else "'${thinking.take(50)}'"
-                DebugLog.log("NULL", "S2_THINK class=$thinkingClass val=$thinkingStr")
+                Log.e("ChatApp", "S2_THINK class=$thinkingClass val=$thinkingStr")
 
                 if (!thinking.isNullOrEmpty() && thinking != "null") {
-                    DebugLog.log("NULL", "S4_RET Thinking('${thinking.take(100)}')")
+                    Log.e("ChatApp", "S4_RET Thinking('${thinking.take(100)}')")
                     return StreamChunk.Thinking(thinking)
                 }
 
@@ -140,17 +140,17 @@ class DeepSeekProvider @Inject constructor(
                 val contentClass = contentElem?.javaClass?.simpleName ?: "null"
                 val content = contentElem?.jsonPrimitive?.content
                 val contentStr = if (content == null) "<NULL>" else "'$content'"
-                DebugLog.log("NULL", "S3_CNT class=$contentClass val=$contentStr")
+                Log.e("ChatApp", "S3_CNT class=$contentClass val=$contentStr")
 
                 if (!content.isNullOrEmpty() && content != "null") {
-                    DebugLog.log("NULL", "S4_RET Content('${content.take(100)}')")
+                    Log.e("ChatApp", "S4_RET Content('${content.take(100)}')")
                     return StreamChunk.Content(content)
                 } else {
-                    DebugLog.log("NULL", "S3_SKIP empty=${content.isNullOrEmpty()} isNull=${content == "null"}")
+                    Log.e("ChatApp", "S3_SKIP empty=${content.isNullOrEmpty()} isNull=${content == "null"}")
                 }
             }
 
-            DebugLog.log("NULL", "S4_RET EMPTY")
+            Log.e("ChatApp", "S4_RET EMPTY")
             StreamChunk.Content("")
         } catch (e: Exception) {
             Log.e("DeepSeekProvider", "Failed to parse SSE chunk", e)
