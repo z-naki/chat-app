@@ -10,7 +10,6 @@ import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.StreamChunk
 import com.chatapp.domain.repository.ChatRepository
 import com.chatapp.util.DebugLog
-import android.util.Log
 import com.chatapp.domain.usecase.SendMessageUseCase
 import com.chatapp.domain.usecase.StreamMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -69,7 +68,7 @@ class ChatViewModel @Inject constructor(
         if (text.isBlank() || _uiState.value.isStreaming) return
 
         DebugLog.log("ChatVM", "sendMessage: text='${text.take(30)}'")
-        Log.e("ChatApp", "=== sendMessage START === ")
+        DebugLog.log("VM", "=== sendMessage START ===")
         _uiState.update { it.copy(inputText = "", isStreaming = true, streamingContent = "", errorMessage = null) }
 
         viewModelScope.launch {
@@ -123,7 +122,6 @@ class ChatViewModel @Inject constructor(
                             val safe = chunk.text.replace("null", "")
                             if (safe.isNotEmpty()) {
                                 DebugLog.log("NULL", "S5_CVM+ txt='${safe.take(80)}'")
-                                Log.e("ChatApp", "AI: ${safe.take(80)}")
                             } else if (chunk.text.isNotEmpty()) {
                                 DebugLog.log("NULL", "S5_SKIP nullContent len=${chunk.text.length}")
                             }
@@ -151,7 +149,7 @@ class ChatViewModel @Inject constructor(
                         is StreamChunk.Done -> {
                             val raw = _uiState.value.streamingContent
                             val fullContent = raw.replace("null", "")
-                            Log.e("ChatApp", "=== Stream DONE, raw=${raw.length} clean=${fullContent.length} ===")
+                            DebugLog.log("VM", "=== Stream DONE, raw=${raw.length} clean=${fullContent.length} ===")
                             DebugLog.log("ChatVM", "StreamChunk.Done received")
                             chatRepository.updateMessageContent(streamingId, fullContent, null)
                             val completedMsg = Message(
@@ -171,7 +169,7 @@ class ChatViewModel @Inject constructor(
                             if (isNew) onConversationCreated?.invoke(activeConversationId)
                         }
                         is StreamChunk.Error -> {
-                            Log.e("ChatApp", "Stream error: ${chunk.throwable.message}")
+                            DebugLog.log("VM", "Stream error: ${chunk.throwable.message}")
                             DebugLog.log("ChatVM", "StreamChunk.Error: ${chunk.throwable.message}")
                             chatRepository.updateMessageContent(
                                 streamingId,

@@ -1,6 +1,5 @@
 package com.chatapp.data.remote.provider.deepseek
 
-import android.util.Log
 import com.chatapp.data.local.prefs.SecurePrefs
 import com.chatapp.util.DebugLog
 import com.chatapp.data.remote.provider.AiProvider
@@ -48,7 +47,7 @@ class DeepSeekProvider @Inject constructor(
             apiKey = securePrefs.getApiKey("DEEPSEEK")
                 ?: run {
                     DebugLog.log("DeepSeek", "API key NOT configured")
-                    Log.e("ChatApp", "DEEPSEEK: API key not configured")
+                    DebugLog.log("DS", "API key NOT configured")
                     return flow {
                         emit(StreamChunk.Error(IllegalStateException("DeepSeek API Key not configured")))
                     }
@@ -116,10 +115,9 @@ class DeepSeekProvider @Inject constructor(
                 val delta = choiceObj["delta"]?.jsonObject
                 val message = choiceObj["message"]?.jsonObject
 
-                // Dump ALL keys in choice and delta/message for diagnosis
-                Log.e("ChatApp", "S0_choice keys=${choiceObj.keys}")
-                if (delta != null) Log.e("ChatApp", "S0_delta keys=${delta.keys} vals=${delta.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
-                if (message != null) Log.e("ChatApp", "S0_msg keys=${message.keys} vals=${message.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+                DebugLog.log("DS", "S0_choice keys=${choiceObj.keys}")
+                if (delta != null) DebugLog.log("DS", "S0_delta keys=${delta.keys} vals=${delta.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
+                if (message != null) DebugLog.log("DS", "S0_msg keys=${message.keys} vals=${message.entries.joinToString { "${it.key}=${it.value}" }.take(200)}")
 
                 if (delta == null && message == null) continue
                 val active = delta ?: message ?: continue
@@ -129,10 +127,10 @@ class DeepSeekProvider @Inject constructor(
                 val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
                 val thinking = thinkingElem?.jsonPrimitive?.content
                 val thinkingStr = if (thinking == null) "<NULL>" else "'${thinking.take(50)}'"
-                Log.e("ChatApp", "S2_THINK class=$thinkingClass val=$thinkingStr")
+                DebugLog.log("DS", "S2_THINK class=$thinkingClass val=$thinkingStr")
 
                 if (!thinking.isNullOrEmpty() && thinking != "null") {
-                    Log.e("ChatApp", "S4_RET Thinking('${thinking.take(100)}')")
+                    DebugLog.log("DS", "S4_RET Thinking('${thinking.take(100)}')")
                     return StreamChunk.Thinking(thinking)
                 }
 
@@ -140,20 +138,20 @@ class DeepSeekProvider @Inject constructor(
                 val contentClass = contentElem?.javaClass?.simpleName ?: "null"
                 val content = contentElem?.jsonPrimitive?.content
                 val contentStr = if (content == null) "<NULL>" else "'$content'"
-                Log.e("ChatApp", "S3_CNT class=$contentClass val=$contentStr")
+                DebugLog.log("DS", "S3_CNT class=$contentClass val=$contentStr")
 
                 if (!content.isNullOrEmpty() && content != "null") {
-                    Log.e("ChatApp", "S4_RET Content('${content.take(100)}')")
+                    DebugLog.log("DS", "S4_RET Content('${content.take(100)}')")
                     return StreamChunk.Content(content)
                 } else {
-                    Log.e("ChatApp", "S3_SKIP empty=${content.isNullOrEmpty()} isNull=${content == "null"}")
+                    DebugLog.log("DS", "S3_SKIP empty=${content.isNullOrEmpty()} isNull=${content == "null"}")
                 }
             }
 
-            Log.e("ChatApp", "S4_RET EMPTY")
+            DebugLog.log("DS", "S4_RET EMPTY")
             StreamChunk.Content("")
         } catch (e: Exception) {
-            Log.e("DeepSeekProvider", "Failed to parse SSE chunk", e)
+            DebugLog.log("DS", "Failed to parse SSE chunk: ${e.message}")
             StreamChunk.Content("")
         }
     }

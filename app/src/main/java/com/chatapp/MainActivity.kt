@@ -9,6 +9,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chatapp.domain.repository.SettingsRepository
 import com.chatapp.ui.navigation.NavGraph
 import com.chatapp.ui.theme.ChatAppTheme
+import com.chatapp.util.DebugLog
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -20,6 +21,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        DebugLog.log("APP", "onCreate version=0.0.11-alpha")
         enableEdgeToEdge()
         setContent {
             val themeMode by settingsRepository.getThemeMode()

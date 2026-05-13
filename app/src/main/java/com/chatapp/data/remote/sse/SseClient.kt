@@ -11,6 +11,7 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.chatapp.util.DebugLog
 import okhttp3.Response
+import com.chatapp.util.DebugLog
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
@@ -49,7 +50,7 @@ class SseClient @Inject constructor(
                     val code = response.code
                     val message = response.body?.string() ?: "HTTP $code"
                     DebugLog.log("SSE", "HTTP error $code: $message")
-                    android.util.Log.e("ChatApp", "SSE HTTP $code: $message")
+                    DebugLog.log("SSE", "HTTP error $code: $message")
                     trySend(SseEvent.Error(HttpException(code, message)))
                     close()
                     return
@@ -81,7 +82,7 @@ class SseClient @Inject constructor(
                                     close()
                                     return
                                 }
-                                android.util.Log.e("ChatApp", "S1_RAW: ${data.take(300)}")
+                                DebugLog.log("SSE", "S1_RAW: ${data.take(300)}")
                                 trySend(SseEvent.Data(data))
                             }
                         }
