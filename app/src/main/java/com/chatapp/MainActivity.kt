@@ -21,7 +21,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DebugLog.log("APP", "onCreate version=0.0.11-alpha")
+        DebugLog.log("APP", "onCreate version=0.0.12-alpha")
         enableEdgeToEdge()
         setContent {
             val themeMode by settingsRepository.getThemeMode()

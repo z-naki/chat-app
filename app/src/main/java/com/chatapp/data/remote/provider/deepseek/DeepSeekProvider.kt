@@ -85,6 +85,8 @@ class DeepSeekProvider @Inject constructor(
             put("stream", true)
             put("max_tokens", request.maxTokens)
             put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
+            put("thinking", buildJsonObject { put("type", "enabled") })
+            put("reasoning_effort", "high")
             putJsonArray("messages") {
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
