@@ -120,32 +120,38 @@ class ChatViewModel @Inject constructor(
                 ).collect { chunk ->
                     when (chunk) {
                         is StreamChunk.Content -> {
-                            if (chunk.text.isNotEmpty()) {
-                                DebugLog.log("NULL", "S5_CVM txt='${chunk.text.take(100)}'")
-                                Log.e("ChatApp", "AI: ${chunk.text.take(80)}")
-                            } else {
-                                DebugLog.log("NULL", "S5_CVM EMPTY")
+                            val safe = chunk.text.replace("null", "")
+                            if (safe.isNotEmpty()) {
+                                DebugLog.log("NULL", "S5_CVM+ txt='${safe.take(80)}'")
+                                Log.e("ChatApp", "AI: ${safe.take(80)}")
+                            } else if (chunk.text.isNotEmpty()) {
+                                DebugLog.log("NULL", "S5_SKIP nullContent len=${chunk.text.length}")
                             }
                             _uiState.update {
-                                val newContent = it.streamingContent + chunk.text
-                                DebugLog.log("NULL", "S6_ACC len=${newContent.length} tail='${newContent.takeLast(40)}'")
+                                val newContent = it.streamingContent + safe
+                                if (safe.isEmpty()) {
+                                    DebugLog.log("NULL", "S6_ACC len=${newContent.length} (no change)")
+                                }
                                 it.copy(streamingContent = newContent)
                             }
                         }
                         is StreamChunk.Thinking -> {
-                            if (chunk.text.isNotEmpty()) {
-                                DebugLog.log("NULL", "S5_THK txt='${chunk.text.take(100)}'")
+                            val safe = chunk.text.replace("null", "")
+                            if (safe.isNotEmpty()) {
+                                DebugLog.log("NULL", "S5_THK+ txt='${safe.take(80)}'")
                                 _uiState.update {
-                                    val newContent = it.streamingContent + chunk.text
-                                    DebugLog.log("NULL", "S6_ACC len=${newContent.length} tail='${newContent.takeLast(40)}'")
+                                    val newContent = it.streamingContent + safe
                                     it.copy(streamingContent = newContent)
                                 }
+                            } else if (chunk.text.isNotEmpty()) {
+                                DebugLog.log("NULL", "S5_SKIP nullThink len=${chunk.text.length}")
                             }
                         }
                         is StreamChunk.SearchStatus -> { }
                         is StreamChunk.Done -> {
-                            val fullContent = _uiState.value.streamingContent
-                            Log.e("ChatApp", "=== Stream DONE, content=${fullContent.length} chars ===")
+                            val raw = _uiState.value.streamingContent
+                            val fullContent = raw.replace("null", "")
+                            Log.e("ChatApp", "=== Stream DONE, raw=${raw.length} clean=${fullContent.length} ===")
                             DebugLog.log("ChatVM", "StreamChunk.Done received")
                             chatRepository.updateMessageContent(streamingId, fullContent, null)
                             val completedMsg = Message(
