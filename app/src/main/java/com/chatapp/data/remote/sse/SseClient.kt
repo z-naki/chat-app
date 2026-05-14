@@ -11,7 +11,6 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import com.chatapp.util.DebugLog
 import okhttp3.Response
-import com.chatapp.util.DebugLog
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader

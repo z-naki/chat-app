@@ -59,14 +59,14 @@ fun StreamingBubble(
                 ) {
                     Text(
                         text = "Thinking",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Spacer(modifier = Modifier.weight(1f))
                     Text(
                         text = formatTokenCount(thinkingTokenCount),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                     )
                     Icon(
                         imageVector = if (isThinkingCollapsed) {
@@ -79,7 +79,7 @@ fun StreamingBubble(
                         } else {
                             "Collapse thinking"
                         },
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f),
                         modifier = Modifier
                             .padding(start = 4.dp)
                             .clickable { onToggleThinking() }
@@ -88,7 +88,7 @@ fun StreamingBubble(
 
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(
-                    thickness = 0.5.dp,
+                    thickness = 1.dp,
                     color = MaterialTheme.colorScheme.outline
                 )
 
@@ -96,14 +96,14 @@ fun StreamingBubble(
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         text = thinking,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(6.dp))
                 HorizontalDivider(
-                    thickness = 0.5.dp,
+                    thickness = 1.dp,
                     color = MaterialTheme.colorScheme.outline
                 )
                 Spacer(modifier = Modifier.height(6.dp))

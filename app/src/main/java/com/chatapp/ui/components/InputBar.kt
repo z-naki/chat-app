@@ -1,8 +1,11 @@
 package com.chatapp.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.expandHorizontally
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkHorizontally
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -41,6 +44,7 @@ fun InputBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .animateContentSize()
             .padding(horizontal = 8.dp, vertical = 8.dp),
         horizontalArrangement = if (active) Arrangement.Start else Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
@@ -77,8 +81,8 @@ fun InputBar(
 
         AnimatedVisibility(
             visible = active,
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it })
+            enter = expandHorizontally() + fadeIn(),
+            exit = shrinkHorizontally() + fadeOut()
         ) {
             IconButton(
                 onClick = if (isStreaming) onStop else onSend,

@@ -153,14 +153,16 @@ class ChatViewModel @Inject constructor(
                             val rawOutput = _uiState.value.streamingOutput
                             val fullContent = rawOutput.replace("null", "")
                             val rawThinking = _uiState.value.streamingThinking
+                            val cleanThinking = rawThinking.trimEnd()
                             DebugLog.log("VM", "=== Stream DONE, think=${rawThinking.length} output=${rawOutput.length} clean=${fullContent.length} ===")
                             DebugLog.log("ChatVM", "StreamChunk.Done received")
-                            chatRepository.updateMessageContent(streamingId, fullContent, null)
+                            chatRepository.updateMessageContent(streamingId, fullContent, cleanThinking.ifEmpty { null })
                             val completedMsg = Message(
                                 id = streamingId,
                                 conversationId = activeConversationId,
                                 role = MessageRole.ASSISTANT,
                                 content = fullContent,
+                                thinking = cleanThinking.ifEmpty { null },
                                 status = MessageStatus.COMPLETE
                             )
                             _uiState.update {
