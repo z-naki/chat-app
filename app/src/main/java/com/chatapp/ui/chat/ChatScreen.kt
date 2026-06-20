@@ -82,13 +82,13 @@ fun ChatScreen(
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { handlePickedImage(it, context, viewModel) }
+        uri?.let { handleAttachment(it, context, viewModel) }
     }
 
     val filePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
-        uri?.let { handlePickedImage(it, context, viewModel) }
+        uri?.let { handleAttachment(it, context, viewModel) }
     }
 
     LaunchedEffect(onConversationCreated) {
@@ -99,9 +99,9 @@ fun ChatScreen(
         viewModel.loadConversation(conversationId)
     }
 
-    // Initial scroll to bottom when loading existing conversation
-    LaunchedEffect(conversationId) {
-        if (conversationId > 0) {
+    // Initial scroll to bottom when messages load for existing conversation
+    LaunchedEffect(conversationId, uiState.messages.lastOrNull()?.id) {
+        if (conversationId > 0 && uiState.messages.isNotEmpty()) {
             listState.animateScrollToItem(maxOf(0, listState.layoutInfo.totalItemsCount - 1))
         }
     }
@@ -289,7 +289,7 @@ fun ChatScreen(
 
 }
 
-private fun handlePickedImage(uri: Uri, context: android.content.Context, viewModel: ChatViewModel) {
+private fun handleAttachment(uri: Uri, context: android.content.Context, viewModel: ChatViewModel) {
     val contentResolver = context.contentResolver
     val mimeType = contentResolver.getType(uri) ?: "image/*"
     val name = try {
@@ -304,17 +304,15 @@ private fun handlePickedImage(uri: Uri, context: android.content.Context, viewMo
         "attachment"
     }
 
-    val base64 = try {
+    val bytes = try {
         val inputStream = contentResolver.openInputStream(uri)
-        inputStream?.use { stream ->
-            val bytes = stream.readBytes()
-            android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
-        } ?: ""
+        inputStream?.use { stream -> stream.readBytes() } ?: ByteArray(0)
     } catch (e: Exception) {
-        ""
+        ByteArray(0)
     }
 
-    if (base64.isNotBlank()) {
+    if (bytes.isNotEmpty()) {
+        val base64 = android.util.Base64.encodeToString(bytes, android.util.Base64.NO_WRAP)
         val att = Attachment(
             id = UUID.randomUUID().toString(),
             type = if (mimeType.startsWith("image/")) AttachmentType.IMAGE else AttachmentType.FILE,
@@ -324,6 +322,13 @@ private fun handlePickedImage(uri: Uri, context: android.content.Context, viewMo
             localPath = uri.toString()
         )
         viewModel.addAttachment(att)
+        // For text files, also attach content as a text preview
+        if (mimeType.startsWith("text/") || mimeType in listOf("application/json", "application/xml")) {
+            val textContent = String(bytes, Charsets.UTF_8).take(2000)
+            if (textContent.isNotBlank()) {
+                viewModel.onInputChange(textContent)
+            }
+        }
     }
 }
 

@@ -21,6 +21,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -54,12 +55,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chatapp.ui.theme.LocalStrings
 import com.chatapp.domain.model.Conversation
+import com.chatapp.domain.model.ProviderType
 import com.chatapp.ui.chat.ChatScreen
 import com.chatapp.ui.chat.ChatViewModel
 import com.chatapp.ui.conversationlist.ConversationListViewModel
@@ -90,6 +93,7 @@ fun HomeScreen(
     val multimodalEnabled = chatUiState.conversation?.multimodalEnabled ?: chatUiState.multimodalEnabled
     val topP = chatUiState.topP
     val supportsTopP = chatViewModel.supportsTopP()
+    val supportsTemp = chatViewModel.supportsTemperature()
     val totalTokens = chatUiState.messages.sumOf { (it.content.length / 2.5).toLong() + (it.thinking?.length?.div(2.5)?.toLong() ?: 0L) }
     val tokenDisplay = when {
         totalTokens >= 1_000_000 -> "${"%.1f".format(totalTokens / 1_000_000.0)}M"
@@ -280,27 +284,26 @@ fun HomeScreen(
                                 onDismissRequest = { showMenu = false }
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
-                                    // Model selector
-                                    Text(s.model, style = MaterialTheme.typography.labelSmall)
+                                    // Provider selector
+                                    Text("Provider", style = MaterialTheme.typography.labelSmall)
                                     Column(
                                         modifier = Modifier.heightIn(max = 120.dp).width(180.dp)
                                             .verticalScroll(rememberScrollState())
                                     ) {
-                                        val models = chatUiState.availableModels.ifEmpty { listOf(chatUiState.currentModel) }
-                                        models.forEach { m ->
+                                        ProviderType.entries.forEach { provider ->
                                             Text(
-                                                text = m, style = MaterialTheme.typography.bodySmall,
-                                                color = if (m == chatUiState.currentModel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                                                modifier = Modifier.padding(vertical = 2.dp).clickable { chatViewModel.selectModel(m) }
+                                                text = provider.displayName, style = MaterialTheme.typography.bodySmall,
+                                                color = if (provider == chatUiState.activeProvider) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(vertical = 2.dp).clickable { chatViewModel.selectProvider(provider) }
                                             )
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     HorizontalDivider()
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("${s.temperature}: ${"%.2f".format(temp)}", style = MaterialTheme.typography.labelSmall)
-                                    Slider(value = temp, onValueChange = { chatViewModel.updateTemperature(it) }, valueRange = 0f..2f, modifier = Modifier.width(180.dp).height(32.dp))
-                                    Text("Top-p (${s.topP}): ${"%.2f".format(topP)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTopP) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                                    Text("${s.temperature}: ${"%.2f".format(temp)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTemp) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                                    Slider(value = temp, onValueChange = { chatViewModel.updateTemperature(it) }, valueRange = 0f..2f, enabled = supportsTemp, modifier = Modifier.width(180.dp).height(32.dp))
+                                    Text("${s.topP}: ${"%.2f".format(topP)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTopP) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
                                     Slider(value = topP, onValueChange = { chatViewModel.updateTopP(it) }, valueRange = 0f..1f, enabled = supportsTopP, modifier = Modifier.width(180.dp).height(32.dp))
                                     OutlinedTextField(
                                         value = contextRounds.toString(), onValueChange = { v -> v.toIntOrNull()?.let { chatViewModel.updateContextRounds(it) } },
@@ -314,9 +317,9 @@ fun HomeScreen(
                                         textStyle = MaterialTheme.typography.bodySmall,
                                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.width(180.dp).height(52.dp)
                                     )
-                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Spacer(modifier = Modifier.height(8.dp))
                                     HorizontalDivider()
-                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Spacer(modifier = Modifier.height(6.dp))
                                     Row(
                                         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -334,7 +337,7 @@ fun HomeScreen(
                         }
                     },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        containerColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                         titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )

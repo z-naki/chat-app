@@ -13,5 +13,7 @@ data class ProviderEditUiState(
     val isAuthenticating: Boolean = false,
     val isAuthenticated: Boolean = false,
     val authErrorMessage: String? = null,
-    val customProviderName: String = ""
+    val customProviderName: String = "",
+    val systemPrompt: String = "",
+    val customParams: String = ""
 )

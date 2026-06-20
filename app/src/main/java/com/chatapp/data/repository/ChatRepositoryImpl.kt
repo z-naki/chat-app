@@ -145,13 +145,17 @@ class ChatRepositoryImpl @Inject constructor(
         }
         val model = securePrefs.getProviderModel(conversation.provider.name)
             .ifEmpty { getDefaultModel(conversation.provider) }
+        val systemPrompt = securePrefs.getSystemPrompt(conversation.provider.name).ifEmpty { null }
+        val customParams = securePrefs.getCustomParams(conversation.provider.name).ifEmpty { null }
         val request = ChatRequest(
             model = model,
             messages = providerMessages,
             temperature = conversation.temperature,
             topP = conversation.topP,
             maxTokens = conversation.maxTokens,
-            enableSearch = enableSearch
+            enableSearch = enableSearch,
+            systemPrompt = systemPrompt,
+            customParams = customParams
         )
         return provider.stream(request)
     }
@@ -163,7 +167,7 @@ class ChatRepositoryImpl @Inject constructor(
         ProviderType.GEMINI -> "gemini-2.5-flash"
         ProviderType.MOONSHOT -> "moonshot-v1-128k"
         ProviderType.QWEN -> "qwen-max"
-        ProviderType.CUSTOM -> ""
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ""
     }
 
     private fun trimContext(messages: List<Message>, contextRounds: Int): List<Message> {

@@ -6,7 +6,9 @@ import com.chatapp.data.local.db.AppDatabase
 import com.chatapp.data.local.db.dao.ConversationDao
 import com.chatapp.data.local.db.dao.MessageDao
 import com.chatapp.data.local.prefs.SecurePrefs
-import com.chatapp.data.remote.provider.CustomProvider
+import com.chatapp.data.remote.provider.CustomProvider1
+import com.chatapp.data.remote.provider.CustomProvider2
+import com.chatapp.data.remote.provider.CustomProvider3
 import com.chatapp.data.remote.provider.ProviderRouter
 import com.chatapp.data.remote.provider.anthropic.AnthropicProvider
 import com.chatapp.data.remote.provider.deepseek.DeepSeekProvider
@@ -24,6 +26,7 @@ import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
@@ -59,6 +62,10 @@ object AppModule {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.SECONDS) // no timeout for streaming
             .writeTimeout(30, TimeUnit.SECONDS)
+            // Certificate pinning — add provider cert hashes here
+            .certificatePinner(CertificatePinner.Builder()
+                // .add("api.deepseek.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
+                .build())
             .build()
     }
 
@@ -72,7 +79,9 @@ object AppModule {
         geminiProvider: GeminiProvider,
         moonshotProvider: MoonshotProvider,
         qwenProvider: QwenProvider,
-        customProvider: CustomProvider
+        custom1: CustomProvider1,
+        custom2: CustomProvider2,
+        custom3: CustomProvider3
     ): ProviderRouter {
         return ProviderRouter(securePrefs).apply {
             register(deepSeekProvider)
@@ -81,7 +90,9 @@ object AppModule {
             register(geminiProvider)
             register(moonshotProvider)
             register(qwenProvider)
-            register(customProvider)
+            register(custom1)
+            register(custom2)
+            register(custom3)
         }
     }
 

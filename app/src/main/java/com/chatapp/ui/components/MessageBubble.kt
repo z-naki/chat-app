@@ -81,8 +81,7 @@ fun ChatMessage(
             horizontalArrangement = if (isUser) Arrangement.End else Arrangement.Start
         ) {
             Column(
-                modifier = if (isUser) Modifier.fillMaxWidth(0.78f)
-                           else Modifier.widthIn(max = 300.dp),
+                modifier = Modifier.fillMaxWidth(),
                 horizontalAlignment = if (isUser) Alignment.End else Alignment.Start
             ) {
                 // Thinking (assistant only)
@@ -98,7 +97,7 @@ fun ChatMessage(
                         Spacer(Modifier.weight(1f))
                         Text(
                             formatTokenCount((message.thinking?.length?.div(2.5)?.toLong() ?: 0L) +
-                                (message.content.length / 2.5).toLong()),
+                                (message.content.length / 2.5).toLong()) + " " + s.tokens,
                             style = MaterialTheme.typography.bodySmall,
                             color = contentColor.copy(alpha = 0.5f))
                         Icon(
@@ -185,6 +184,6 @@ private fun AttachmentThumbnail(attachment: Attachment) {
 }
 
 private fun formatTokenCount(tokens: Long): String {
-    if (tokens >= 1000) { val w = tokens / 1000; val f = (tokens % 1000) / 100; return "$w.${f}k tokens" }
-    return "$tokens tokens"
+    if (tokens >= 1000) { val w = tokens / 1000; val f = (tokens % 1000) / 100; return "$w.${f}k" }
+    return "$tokens"
 }

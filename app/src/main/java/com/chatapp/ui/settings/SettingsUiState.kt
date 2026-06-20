@@ -11,5 +11,6 @@ data class SettingsUiState(
     val multimodalProvider: String = "Default",
     val multimodalApiUrl: String = "",
     val multimodalApiKey: String = "",
-    val language: String = "en"
+    val language: String = "en",
+    val customSlotCount: Int = 1
 )

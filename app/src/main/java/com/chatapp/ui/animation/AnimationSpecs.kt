@@ -26,26 +26,26 @@ fun smoothExit() = slideOutVertically(
 
 /** Vertical expand with tween, no bounce */
 fun smoothExpandVertically() = expandVertically(
-    animationSpec = tween(durationMillis = 250, easing = FastOutSlowInEasing)
+    animationSpec = tween(durationMillis = 280, easing = FastOutSlowInEasing)
 )
 
 /** Vertical shrink with tween, no bounce */
 fun smoothShrinkVertically() = shrinkVertically(
-    animationSpec = tween(durationMillis = 200, easing = FastOutSlowInEasing)
+    animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
 )
 
 /** Horizontal expand with tween, no bounce */
 fun smoothExpandHorizontally() = expandHorizontally(
-    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)
+    animationSpec = tween(durationMillis = 260, easing = FastOutSlowInEasing)
 )
 
 /** Horizontal shrink with tween, no bounce */
 fun smoothShrinkHorizontally() = shrinkHorizontally(
-    animationSpec = tween(durationMillis = 180, easing = FastOutSlowInEasing)
+    animationSpec = tween(durationMillis = 220, easing = FastOutSlowInEasing)
 )
 
 /** Simple fade-in with tween */
-fun smoothFadeIn() = fadeIn(animationSpec = tween(durationMillis = 200, easing = LinearEasing))
+fun smoothFadeIn() = fadeIn(animationSpec = tween(durationMillis = 220, easing = LinearEasing))
 
 /** Simple fade-out with tween */
-fun smoothFadeOut() = fadeOut(animationSpec = tween(durationMillis = 150, easing = LinearEasing))
+fun smoothFadeOut() = fadeOut(animationSpec = tween(durationMillis = 180, easing = LinearEasing))

@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.chatapp.ui.theme.LocalStrings
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -42,13 +43,13 @@ fun StreamingMessage(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Thinking",
+                    text = LocalStrings.current.thought,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
                 Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = formatTokenCount(thinkingTokenCount + outputTokenCount),
+                    text = formatTokenCount(thinkingTokenCount + outputTokenCount) + " " + LocalStrings.current.tokens,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                 )
@@ -104,7 +105,7 @@ private fun formatTokenCount(tokens: Long): String {
     if (tokens >= 1000) {
         val whole = tokens / 1000
         val frac = ((tokens % 1000) / 100)
-        return "$whole.${frac}k tokens"
+        return "$whole.${frac}k"
     }
-    return "$tokens tokens"
+    return "$tokens"
 }

@@ -49,7 +49,9 @@ class ProviderEditViewModel @Inject constructor(
                     isAuthenticated = false,
                     isAuthenticating = false,
                     authErrorMessage = null,
-                    customProviderName = securePrefs.getCustomProviderName()
+                    customProviderName = securePrefs.getCustomProviderName(providerType.name),
+                    systemPrompt = securePrefs.getSystemPrompt(providerType.name),
+                    customParams = securePrefs.getCustomParams(providerType.name)
                 )
             }
         }
@@ -127,11 +129,16 @@ class ProviderEditViewModel @Inject constructor(
             }
             settingsRepository.saveProviderBaseUrl(provider, state.baseUrl)
             settingsRepository.saveProviderModel(provider, state.model)
-            if (provider == ProviderType.CUSTOM) {
-                securePrefs.putCustomProviderName(state.customProviderName)
+            if (provider.name.startsWith("CUSTOM")) {
+                securePrefs.putCustomProviderName(provider.name, state.customProviderName)
             }
+            securePrefs.putSystemPrompt(provider.name, state.systemPrompt)
+            securePrefs.putCustomParams(provider.name, state.customParams)
         }
     }
+
+    fun onSystemPromptChange(v: String) { _uiState.update { it.copy(systemPrompt = v) } }
+    fun onCustomParamsChange(v: String) { _uiState.update { it.copy(customParams = v) } }
 
     private fun defaultBaseUrl(type: ProviderType): String = when (type) {
         ProviderType.DEEPSEEK -> "https://api.deepseek.com"
@@ -140,7 +147,7 @@ class ProviderEditViewModel @Inject constructor(
         ProviderType.GEMINI -> "https://generativelanguage.googleapis.com"
         ProviderType.MOONSHOT -> "https://api.moonshot.cn"
         ProviderType.QWEN -> "https://dashscope.aliyuncs.com/compatible-mode"
-        ProviderType.CUSTOM -> ""
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ""
     }
 
     private fun defaultModel(type: ProviderType): String = when (type) {
@@ -150,6 +157,6 @@ class ProviderEditViewModel @Inject constructor(
         ProviderType.GEMINI -> "gemini-2.5-pro"
         ProviderType.MOONSHOT -> "moonshot-v1-128k"
         ProviderType.QWEN -> "qwen-max"
-        ProviderType.CUSTOM -> ""
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ""
     }
 }

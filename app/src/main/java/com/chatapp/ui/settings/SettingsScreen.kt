@@ -187,8 +187,7 @@ fun SettingsScreen(
                 OutlinedTextField(
                     value = uiState.proxyAddress,
                     onValueChange = { viewModel.setProxyAddress(it) },
-                    label = { Text("Proxy Address") },
-                    placeholder = { Text("127.0.0.1:7890") },
+                    label = { Text(s.proxy) },
                     singleLine = true,
                     modifier = Modifier
                         .fillMaxWidth()

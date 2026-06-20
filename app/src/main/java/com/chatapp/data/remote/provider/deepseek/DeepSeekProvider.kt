@@ -118,15 +118,23 @@ class DeepSeekProvider @Inject constructor(
             put("model", model)
             put("stream", true)
             put("max_tokens", request.maxTokens)
-            put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
-            request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             // Only enable thinking for reasoning-capable models, not deepseek-chat
             val modelName = securePrefs.getProviderModel("DEEPSEEK").ifEmpty { "deepseek-v4-pro" }
-            if (!modelName.contains("chat")) {
+            val isThinking = !modelName.contains("chat")
+            // DeepSeek thinking mode ignores temperature/top_p — skip them to avoid confusion
+            if (!isThinking) {
+                put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
+                request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
+            }
+            if (isThinking) {
                 put("thinking", buildJsonObject { put("type", "enabled") })
                 put("reasoning_effort", "high")
             }
             putJsonArray("messages") {
+                // System prompt
+                request.systemPrompt?.let { sp ->
+                    add(buildJsonObject { put("role", "system"); put("content", sp) })
+                }
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
                         put("role", msg.role)

@@ -10,4 +10,5 @@
 .cxx
 local.properties
 /app/build
+.kotlin/
 .gradle/

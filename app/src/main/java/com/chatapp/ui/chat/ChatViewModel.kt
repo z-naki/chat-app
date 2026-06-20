@@ -94,7 +94,16 @@ class ChatViewModel @Inject constructor(
         if (conversationId > 0) {
             viewModelScope.launch {
                 val conversation = chatRepository.getConversation(conversationId)
-                _uiState.update { it.copy(conversation = conversation) }
+                _uiState.update {
+                    it.copy(
+                        conversation = conversation,
+                        temperature = conversation?.temperature ?: 0.7f,
+                        contextRounds = conversation?.contextRounds ?: 20,
+                        maxTokensUi = conversation?.maxTokens ?: 384_000,
+                        topP = conversation?.topP ?: 0.9f,
+                        multimodalEnabled = conversation?.multimodalEnabled ?: false
+                    )
+                }
             }
             viewModelScope.launch {
                 chatRepository.getMessages(conversationId).collect { messages ->
@@ -145,7 +154,7 @@ class ChatViewModel @Inject constructor(
         ProviderType.GEMINI -> ProviderDefaults(0.9f, 65_536, 20)
         ProviderType.MOONSHOT -> ProviderDefaults(0.3f, 4_096, 20)
         ProviderType.QWEN -> ProviderDefaults(0.7f, 8_192, 20)
-        ProviderType.CUSTOM -> ProviderDefaults(0.7f, 16_384, 20)
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ProviderDefaults(0.7f, 16_384, 20)
     }
 
     fun selectProvider(provider: ProviderType) {
@@ -170,7 +179,7 @@ class ChatViewModel @Inject constructor(
         ProviderType.GEMINI -> "gemini-2.5-flash"
         ProviderType.MOONSHOT -> "moonshot-v1-128k"
         ProviderType.QWEN -> "qwen-max"
-        ProviderType.CUSTOM -> ""
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ""
     }
 
     private fun getProviderFallbackModels(provider: ProviderType): List<String> = when (provider) {
@@ -180,7 +189,7 @@ class ChatViewModel @Inject constructor(
         ProviderType.GEMINI -> listOf("gemini-2.5-flash", "gemini-2.5-pro")
         ProviderType.MOONSHOT -> listOf("moonshot-v1-8k", "moonshot-v1-32k", "moonshot-v1-128k")
         ProviderType.QWEN -> listOf("qwen-turbo", "qwen-plus", "qwen-max")
-        ProviderType.CUSTOM -> emptyList()
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> emptyList()
     }
 
     fun toggleMultimodal() {
@@ -219,7 +228,18 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { chatRepository.updateConversationTopP(convId, p) }
     }
 
-    fun supportsTopP(): Boolean = _uiState.value.activeProvider != ProviderType.ANTHROPIC
+    fun supportsTopP(): Boolean {
+        // DeepSeek thinking models: temperature/top_p are ignored by API
+        if (_uiState.value.activeProvider == ProviderType.DEEPSEEK && !_uiState.value.currentModel.contains("chat")) return false
+        return true
+    }
+
+    fun supportsTemperature(): Boolean {
+        val p = _uiState.value.activeProvider
+        // DeepSeek thinking models: temperature is ignored by API
+        if (p == ProviderType.DEEPSEEK && !_uiState.value.currentModel.contains("chat")) return false
+        return true
+    }
 
     fun supportsSearch(): Boolean = _uiState.value.activeProvider == ProviderType.DEEPSEEK
 
@@ -382,14 +402,17 @@ class ChatViewModel @Inject constructor(
     fun stopGeneration() {
         streamJob?.cancel()
         val partial = _uiState.value.streamingOutput
-        _uiState.update {
-            it.copy(isStreaming = false, streamingOutput = "", streamingThinking = "")
-        }
         val streamingMsg = _uiState.value.messages.lastOrNull { it.status == MessageStatus.STREAMING }
+        _uiState.update {
+            it.copy(isStreaming = false, streamingOutput = "", streamingThinking = "",
+                messages = if (partial.isEmpty()) it.messages.filterNot { m -> m.id == streamingMsg?.id } else it.messages)
+        }
         if (streamingMsg != null && partial.isNotEmpty()) {
             viewModelScope.launch {
                 chatRepository.updateMessageContent(streamingMsg.id, partial, null)
             }
+        } else if (streamingMsg != null) {
+            viewModelScope.launch { chatRepository.deleteMessage(streamingMsg.id) }
         }
     }
 
@@ -405,14 +428,30 @@ class ChatViewModel @Inject constructor(
         val userMsg = messages.getOrNull(idx - 1) ?: return
         if (userMsg.role != MessageRole.USER) return
 
+        // Remove old assistant message, then stream directly
         val newMessages = messages.filterNot { it.id == assistantMessageId }
-        _uiState.update { it.copy(messages = newMessages, errorMessage = null) }
+        _uiState.update { it.copy(messages = newMessages, isStreaming = true, streamingOutput = "", streamingThinking = "", errorMessage = null) }
+        viewModelScope.launch { chatRepository.deleteMessage(assistantMessageId) }
 
+        val conv = _uiState.value.conversation ?: return
+        val streamingMsg = Message(conversationId = conv.id, role = MessageRole.ASSISTANT, content = "", status = MessageStatus.STREAMING)
         viewModelScope.launch {
-            chatRepository.deleteMessage(assistantMessageId)
+            val streamingId = chatRepository.saveMessage(streamingMsg)
+            _uiState.update { it.copy(messages = it.messages + streamingMsg.copy(id = streamingId)) }
+            streamMessageUseCase(conv, newMessages.filter { it.status != MessageStatus.STREAMING }, _uiState.value.enableSearch).collect { chunk ->
+                when (chunk) {
+                    is StreamChunk.Content -> { if (chunk.text.isNotEmpty()) _uiState.update { val o = it.streamingOutput + chunk.text; it.copy(streamingOutput = o, outputTokenCount = (o.length / 2.5).toLong()) } }
+                    is StreamChunk.Thinking -> { if (chunk.text.isNotEmpty()) _uiState.update { val t = it.streamingThinking + chunk.text; it.copy(streamingThinking = t, thinkingTokenCount = (t.length / 2.5).toLong()) } }
+                    is StreamChunk.SearchStatus -> { _uiState.update { it.copy(errorMessage = "Searching: ${chunk.query.take(50)}...") } }
+                    is StreamChunk.Done -> {
+                        val full = _uiState.value.streamingOutput; val thinking = _uiState.value.streamingThinking
+                        chatRepository.updateMessageContent(streamingId, full, thinking.ifEmpty { null })
+                        val completed = Message(id = streamingId, conversationId = conv.id, role = MessageRole.ASSISTANT, content = full, thinking = thinking.ifEmpty { null }, status = MessageStatus.COMPLETE)
+                        _uiState.update { it.copy(isStreaming = false, streamingOutput = "", streamingThinking = "", messages = it.messages.filterNot { m -> m.id == streamingId } + completed) }
+                    }
+                    is StreamChunk.Error -> { chatRepository.updateMessageContent(streamingId, _uiState.value.streamingOutput, null); _uiState.update { it.copy(isStreaming = false) } }
+                }
+            }
         }
-
-        _uiState.update { it.copy(inputText = userMsg.content) }
-        sendMessage()
     }
 }

@@ -104,6 +104,9 @@ open class OpenAiCompatibleProvider(
             put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
             request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             putJsonArray("messages") {
+                request.systemPrompt?.let { sp ->
+                    add(buildJsonObject { put("role", "system"); put("content", sp) })
+                }
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
                         put("role", msg.role)

@@ -27,24 +27,37 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CustomProvider @Inject constructor(
+class CustomProvider1 @Inject constructor(
+    sseClient: SseClient, securePrefs: SecurePrefs, json: Json, okHttpClient: OkHttpClient
+) : CustomProvider(sseClient, securePrefs, json, okHttpClient, ProviderType.CUSTOM_1)
+
+@Singleton
+class CustomProvider2 @Inject constructor(
+    sseClient: SseClient, securePrefs: SecurePrefs, json: Json, okHttpClient: OkHttpClient
+) : CustomProvider(sseClient, securePrefs, json, okHttpClient, ProviderType.CUSTOM_2)
+
+@Singleton
+class CustomProvider3 @Inject constructor(
+    sseClient: SseClient, securePrefs: SecurePrefs, json: Json, okHttpClient: OkHttpClient
+) : CustomProvider(sseClient, securePrefs, json, okHttpClient, ProviderType.CUSTOM_3)
+
+open class CustomProvider(
     private val sseClient: SseClient,
     private val securePrefs: SecurePrefs,
     private val json: Json,
-    private val okHttpClient: OkHttpClient
+    private val okHttpClient: OkHttpClient,
+    override val type: ProviderType
 ) : AiProvider {
-
-    override val type: ProviderType = ProviderType.CUSTOM
     override val supportsThinking: Boolean get() = false
 
-    private val baseUrl: String get() = securePrefs.getProviderBaseUrl("CUSTOM")
+    private val providerKey: String get() = type.name
 
     override suspend fun chat(request: ChatRequest): ChatResponse = error("Use stream()")
 
     override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
         try {
-            val apiKey = securePrefs.getApiKey("CUSTOM") ?: return@withContext emptyList()
-            val url = baseUrl.ifEmpty { return@withContext emptyList() }
+            val apiKey = securePrefs.getApiKey(providerKey) ?: return@withContext emptyList()
+            val url = securePrefs.getProviderBaseUrl(providerKey).ifEmpty { return@withContext emptyList() }
             val client = okHttpClient.newBuilder().readTimeout(10, TimeUnit.SECONDS).build()
             val req = Request.Builder().url("$url/v1/models").header("Authorization", "Bearer $apiKey").get().build()
             val response = client.newCall(req).execute()
@@ -59,10 +72,10 @@ class CustomProvider @Inject constructor(
 
     override fun stream(request: ChatRequest): Flow<StreamChunk> {
         val apiKey = try {
-            securePrefs.getApiKey("CUSTOM") ?: return flow { emit(StreamChunk.Error(IllegalStateException("Custom API Key not configured"))) }
+            securePrefs.getApiKey(providerKey) ?: return flow { emit(StreamChunk.Error(IllegalStateException("Custom API Key not configured"))) }
         } catch (e: Exception) { return flow { emit(StreamChunk.Error(e)) } }
-        val url = baseUrl.ifEmpty { return flow { emit(StreamChunk.Error(IllegalStateException("Custom Base URL not configured"))) } }
-        val model = securePrefs.getProviderModel("CUSTOM").ifEmpty { "gpt-4o" }
+        val url = securePrefs.getProviderBaseUrl(providerKey).ifEmpty { return flow { emit(StreamChunk.Error(IllegalStateException("Base URL not configured"))) } }
+        val model = securePrefs.getProviderModel(providerKey).ifEmpty { "gpt-4o" }
         val body = buildRequestBody(request, model)
         return sseClient.connect(
             url = "$url/v1/chat/completions",
@@ -85,6 +98,9 @@ class CustomProvider @Inject constructor(
             put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
             request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             putJsonArray("messages") {
+                request.systemPrompt?.let { sp ->
+                    add(buildJsonObject { put("role", "system"); put("content", sp) })
+                }
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
                         put("role", msg.role)

@@ -61,10 +61,11 @@ fun ConversationItem(
 private fun formatTimestamp(timestamp: Long): String {
     val now = System.currentTimeMillis()
     val diff = now - timestamp
+    val zh = Locale.getDefault().language == "zh"
     return when {
-        diff < 60_000 -> "Just now"
-        diff < 3600_000 -> "${diff / 60_000} min ago"
-        diff < 86_400_000 -> "${diff / 3_600_000} h ago"
+        diff < 60_000 -> if (zh) "刚刚" else "Just now"
+        diff < 3600_000 -> if (zh) "${diff / 60_000}分钟前" else "${diff / 60_000} min ago"
+        diff < 86_400_000 -> if (zh) "${diff / 3_600_000}小时前" else "${diff / 3_600_000} h ago"
         else -> {
             val sdf = SimpleDateFormat("MM/dd", Locale.getDefault())
             sdf.format(Date(timestamp))

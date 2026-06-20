@@ -21,3 +21,12 @@ Trigger: any edit that references external resources (Maven coordinates, plugin 
 After ANY project error is fixed (build, runtime crash, UI glitch, data bug, API error, navigation issue, state bug), analyzes whether the error was caused by Claude and writes a prevention rule to the skill file.
 
 Trigger: immediately after any project error is resolved.
+
+## Development Workflow (MUST follow this order)
+
+1. **All changes first** — implement every feature, fix, and modification across all files. Do NOT run gradle between individual changes.
+2. **Agent debug** — dispatch region-split agents (≤12 files each). Each agent MUST embed systematic-debugging methodology (Phase 1-4: read all files → pattern checks → hypothesis → output). Do NOT dismiss LOW bugs.
+3. **Fix all bugs** — address every bug found by agents, including LOW severity.
+4. **Compile once** — `./gradlew compileDebugKotlin` at the very end.
+
+**DO NOT** compile after each edit. Compile only once after ALL work is complete.

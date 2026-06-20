@@ -7,6 +7,8 @@ data class ChatRequest(
     val topP: Float? = null,
     val maxTokens: Int = 384_000,
     val enableSearch: Boolean = false,
+    val systemPrompt: String? = null,
+    val customParams: String? = null,
     val extraParams: Map<String, String> = emptyMap()
 )
 

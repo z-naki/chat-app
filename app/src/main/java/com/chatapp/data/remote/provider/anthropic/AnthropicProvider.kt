@@ -107,7 +107,10 @@ class AnthropicProvider @Inject constructor(
             put("model", model)
             put("max_tokens", effectiveMaxTokens)
             put("stream", true)
-            put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
+            // Anthropic temp range 0.0-1.0, cap at 1.0
+            request.systemPrompt?.let { put("system", it) }
+            put("temperature", minOf(request.temperature, 1.0f).toDouble().let { (it * 100).toInt() / 100.0 })
+            request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             if (enableThinking && thinkingBudget >= 1024) {
                 put("thinking", buildJsonObject {
                     put("type", "enabled")

@@ -11,7 +11,9 @@ enum class ProviderType(
     GEMINI("Gemini", true, supportsMultimodal = true),
     MOONSHOT("Moonshot/Kimi", false, supportsMultimodal = true),
     QWEN("Qwen", false, supportsMultimodal = false),
-    CUSTOM("Custom", false, supportsMultimodal = false);
+    CUSTOM_1("Custom 1", false, supportsMultimodal = false),
+    CUSTOM_2("Custom 2", false, supportsMultimodal = false),
+    CUSTOM_3("Custom 3", false, supportsMultimodal = false);
 
     companion object {
         fun fromStringOrDefault(value: String): ProviderType {

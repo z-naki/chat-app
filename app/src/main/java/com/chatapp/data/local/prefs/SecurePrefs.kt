@@ -151,12 +151,28 @@ class SecurePrefs @Inject constructor(
         return encryptedPrefs.getString("multimodal_provider", null) ?: "Default"
     }
 
-    fun putCustomProviderName(name: String) {
-        encryptedPrefs.edit().putString("custom_provider_name", name).apply()
+    fun putCustomProviderName(providerKey: String, name: String) {
+        encryptedPrefs.edit().putString("custom_name_$providerKey", name).apply()
     }
 
-    fun getCustomProviderName(): String {
-        return encryptedPrefs.getString("custom_provider_name", null) ?: "Custom"
+    fun getCustomProviderName(providerKey: String): String {
+        return encryptedPrefs.getString("custom_name_$providerKey", null) ?: "Custom"
+    }
+
+    fun putSystemPrompt(providerKey: String, prompt: String) {
+        encryptedPrefs.edit().putString("system_prompt_$providerKey", prompt).apply()
+    }
+
+    fun getSystemPrompt(providerKey: String): String {
+        return encryptedPrefs.getString("system_prompt_$providerKey", null) ?: ""
+    }
+
+    fun putCustomParams(providerKey: String, params: String) {
+        encryptedPrefs.edit().putString("custom_params_$providerKey", params).apply()
+    }
+
+    fun getCustomParams(providerKey: String): String {
+        return encryptedPrefs.getString("custom_params_$providerKey", null) ?: ""
     }
 
     // --- Theme ---
