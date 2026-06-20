@@ -13,8 +13,10 @@ class CreateConversationUseCase @Inject constructor(
         provider: ProviderType,
         temperature: Float = 0.7f,
         maxTokens: Int = 384_000,
-        contextRounds: Int = 20
+        contextRounds: Int = 20,
+        multimodalEnabled: Boolean = false,
+        topP: Float = 0.9f
     ): Conversation {
-        return chatRepository.createConversation(title, provider, temperature, maxTokens, contextRounds)
+        return chatRepository.createConversation(title, provider, temperature, maxTokens, contextRounds, multimodalEnabled, topP)
     }
 }

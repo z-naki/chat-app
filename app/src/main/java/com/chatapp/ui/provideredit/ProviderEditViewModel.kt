@@ -1,9 +1,12 @@
 package com.chatapp.ui.provideredit
 
+import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chatapp.data.local.prefs.SecurePrefs
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.repository.SettingsRepository
+import com.chatapp.util.BiometricAuthHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,11 +17,19 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ProviderEditViewModel @Inject constructor(
-    private val settingsRepository: SettingsRepository
+    private val settingsRepository: SettingsRepository,
+    private val biometricAuthHelper: BiometricAuthHelper,
+    private val securePrefs: SecurePrefs
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProviderEditUiState())
     val uiState: StateFlow<ProviderEditUiState> = _uiState.asStateFlow()
+
+    private var activity: FragmentActivity? = null
+
+    fun setActivity(activity: FragmentActivity) {
+        this.activity = activity
+    }
 
     fun loadProvider(providerType: ProviderType) {
         viewModelScope.launch {
@@ -33,10 +44,19 @@ class ProviderEditViewModel @Inject constructor(
                     apiKey = key,
                     baseUrl = baseUrl,
                     model = model,
-                    isLoaded = true
+                    isLoaded = true,
+                    showKey = false,
+                    isAuthenticated = false,
+                    isAuthenticating = false,
+                    authErrorMessage = null,
+                    customProviderName = securePrefs.getCustomProviderName()
                 )
             }
         }
+    }
+
+    fun onCustomNameChange(name: String) {
+        _uiState.update { it.copy(customProviderName = name) }
     }
 
     fun onProviderSelect(provider: ProviderType) {
@@ -61,7 +81,39 @@ class ProviderEditViewModel @Inject constructor(
     }
 
     fun toggleKeyVisibility() {
-        _uiState.update { it.copy(showKey = !it.showKey) }
+        val current = _uiState.value
+
+        // If currently showing, hide immediately (no auth needed to hide)
+        if (current.showKey) {
+            _uiState.update { it.copy(showKey = false, isAuthenticated = false) }
+            return
+        }
+
+        // If already authenticated this session, show immediately
+        if (current.isAuthenticated) {
+            _uiState.update { it.copy(showKey = true) }
+            return
+        }
+
+        // Require biometric authentication
+        val act = activity
+        if (act == null) {
+            _uiState.update { it.copy(authErrorMessage = "Activity not available") }
+            return
+        }
+
+        _uiState.update { it.copy(isAuthenticating = true) }
+        biometricAuthHelper.authenticate(act) { result ->
+            if (result.success) {
+                _uiState.update {
+                    it.copy(showKey = true, isAuthenticated = true, isAuthenticating = false, authErrorMessage = null)
+                }
+            } else {
+                _uiState.update {
+                    it.copy(isAuthenticating = false, authErrorMessage = result.errorMessage)
+                }
+            }
+        }
     }
 
     fun save() {
@@ -75,6 +127,9 @@ class ProviderEditViewModel @Inject constructor(
             }
             settingsRepository.saveProviderBaseUrl(provider, state.baseUrl)
             settingsRepository.saveProviderModel(provider, state.model)
+            if (provider == ProviderType.CUSTOM) {
+                securePrefs.putCustomProviderName(state.customProviderName)
+            }
         }
     }
 
@@ -83,6 +138,9 @@ class ProviderEditViewModel @Inject constructor(
         ProviderType.OPENAI -> "https://api.openai.com"
         ProviderType.ANTHROPIC -> "https://api.anthropic.com"
         ProviderType.GEMINI -> "https://generativelanguage.googleapis.com"
+        ProviderType.MOONSHOT -> "https://api.moonshot.cn"
+        ProviderType.QWEN -> "https://dashscope.aliyuncs.com/compatible-mode"
+        ProviderType.CUSTOM -> ""
     }
 
     private fun defaultModel(type: ProviderType): String = when (type) {
@@ -90,5 +148,8 @@ class ProviderEditViewModel @Inject constructor(
         ProviderType.OPENAI -> "gpt-4o"
         ProviderType.ANTHROPIC -> "claude-sonnet-4-6"
         ProviderType.GEMINI -> "gemini-2.5-pro"
+        ProviderType.MOONSHOT -> "moonshot-v1-128k"
+        ProviderType.QWEN -> "qwen-max"
+        ProviderType.CUSTOM -> ""
     }
 }

@@ -52,6 +52,7 @@ class CryptoManager @Inject constructor() {
     }
 
     fun encrypt(plainText: String): String {
+        if (plainText.isEmpty()) return ""
         val cipher = Cipher.getInstance(TRANSFORMATION)
         cipher.init(Cipher.ENCRYPT_MODE, secretKey)
         val iv = cipher.iv

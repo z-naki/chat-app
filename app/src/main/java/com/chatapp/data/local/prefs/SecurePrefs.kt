@@ -116,6 +116,49 @@ class SecurePrefs @Inject constructor(
         }
     }
 
+    // --- Multimodal Config ---
+
+    fun putMultimodalConfig(url: String, key: String, providerName: String) {
+        encryptedPrefs.edit().apply {
+            putString("multimodal_api_url", url)
+            putString("multimodal_provider", providerName)
+        }.apply()
+        if (key.isNotBlank()) {
+            putMultimodalApiKey(key)
+        }
+    }
+
+    fun getMultimodalApiUrl(): String {
+        return encryptedPrefs.getString("multimodal_api_url", null) ?: ""
+    }
+
+    fun getMultimodalApiKey(): String? {
+        val envelope = encryptedPrefs.getString("multimodal_api_key", null) ?: return null
+        return try {
+            cryptoManager.decrypt(envelope)
+        } catch (e: Exception) {
+            android.util.Log.w("SecurePrefs", "Failed to decrypt multimodal API key")
+            null
+        }
+    }
+
+    fun putMultimodalApiKey(key: String) {
+        val envelope = cryptoManager.encrypt(key)
+        encryptedPrefs.edit().putString("multimodal_api_key", envelope).apply()
+    }
+
+    fun getMultimodalProvider(): String {
+        return encryptedPrefs.getString("multimodal_provider", null) ?: "Default"
+    }
+
+    fun putCustomProviderName(name: String) {
+        encryptedPrefs.edit().putString("custom_provider_name", name).apply()
+    }
+
+    fun getCustomProviderName(): String {
+        return encryptedPrefs.getString("custom_provider_name", null) ?: "Custom"
+    }
+
     // --- Theme ---
 
     fun getThemeMode(): Flow<String> {
@@ -132,9 +175,19 @@ class SecurePrefs @Inject constructor(
         }
     }
 
+    fun getLanguage(): Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[LANGUAGE_KEY] ?: "en"
+    }
+
+    suspend fun setLanguage(lang: String) {
+        try { context.dataStore.edit { prefs -> prefs[LANGUAGE_KEY] = lang } }
+        catch (e: Exception) { android.util.Log.e("SecurePrefs", "Failed to save language", e) }
+    }
+
     companion object {
         private val PROXY_ENABLED = booleanPreferencesKey("proxy_enabled")
         private val PROXY_ADDRESS = stringPreferencesKey("proxy_address")
         private val THEME_MODE = stringPreferencesKey("theme_mode")
+        private val LANGUAGE_KEY = stringPreferencesKey("language")
     }
 }

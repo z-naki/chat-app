@@ -1,6 +1,7 @@
 package com.chatapp.data.repository
 
 import com.chatapp.data.local.prefs.SecurePrefs
+import com.chatapp.domain.model.MultimodalConfig
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.repository.SettingsRepository
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +49,18 @@ class SettingsRepositoryImpl @Inject constructor(
         return securePrefs.getProviderModel(providerType.name)
     }
 
+    override suspend fun saveMultimodalConfig(config: MultimodalConfig) {
+        securePrefs.putMultimodalConfig(config.apiUrl, config.apiKey, config.providerName)
+    }
+
+    override suspend fun getMultimodalConfig(): MultimodalConfig {
+        return MultimodalConfig(
+            apiUrl = securePrefs.getMultimodalApiUrl(),
+            apiKey = securePrefs.getMultimodalApiKey() ?: "",
+            providerName = securePrefs.getMultimodalProvider()
+        )
+    }
+
     override fun isProxyEnabled(): Flow<Boolean> = securePrefs.isProxyEnabled()
 
     override suspend fun setProxyEnabled(enabled: Boolean) = securePrefs.setProxyEnabled(enabled)
@@ -59,4 +72,6 @@ class SettingsRepositoryImpl @Inject constructor(
     override fun getThemeMode(): Flow<String> = securePrefs.getThemeMode()
 
     override suspend fun setThemeMode(mode: String) = securePrefs.setThemeMode(mode)
+    override fun getLanguage(): Flow<String> = securePrefs.getLanguage()
+    override suspend fun setLanguage(lang: String) = securePrefs.setLanguage(lang)
 }

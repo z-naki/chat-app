@@ -6,6 +6,7 @@ data class Message(
     val role: MessageRole,
     val content: String,
     val thinking: String? = null,
+    val attachments: List<Attachment> = emptyList(),
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.COMPLETE
 )

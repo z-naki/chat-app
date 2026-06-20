@@ -7,5 +7,9 @@ data class SettingsUiState(
     val proxyEnabled: Boolean = false,
     val proxyAddress: String = "",
     val configuredProviders: Set<ProviderType> = emptySet(),
-    val showOtherProviders: Boolean = false
+    val showOtherProviders: Boolean = false,
+    val multimodalProvider: String = "Default",
+    val multimodalApiUrl: String = "",
+    val multimodalApiKey: String = "",
+    val language: String = "en"
 )

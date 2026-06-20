@@ -2,6 +2,7 @@ package com.chatapp.ui.settings
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.chatapp.domain.model.MultimodalConfig
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.repository.SettingsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,6 +38,25 @@ class SettingsViewModel @Inject constructor(
             }
         }
         loadConfiguredProviders()
+        loadMultimodalConfig()
+        viewModelScope.launch {
+            settingsRepository.getLanguage().collect { lang ->
+                _uiState.update { it.copy(language = lang) }
+            }
+        }
+    }
+
+    private fun loadMultimodalConfig() {
+        viewModelScope.launch {
+            val config = settingsRepository.getMultimodalConfig()
+            _uiState.update {
+                it.copy(
+                    multimodalProvider = config.providerName.ifEmpty { "Default" },
+                    multimodalApiUrl = config.apiUrl,
+                    multimodalApiKey = config.apiKey
+                )
+            }
+        }
     }
 
     fun loadConfiguredProviders() {
@@ -63,5 +83,38 @@ class SettingsViewModel @Inject constructor(
     fun setProxyAddress(address: String) {
         _uiState.update { it.copy(proxyAddress = address) }
         viewModelScope.launch { settingsRepository.setProxyAddress(address) }
+    }
+
+    fun setMultimodalProvider(name: String) {
+        _uiState.update { it.copy(multimodalProvider = name) }
+        saveMultimodalConfig()
+    }
+
+    fun setMultimodalApiUrl(url: String) {
+        _uiState.update { it.copy(multimodalApiUrl = url) }
+        saveMultimodalConfig()
+    }
+
+    fun setMultimodalApiKey(key: String) {
+        _uiState.update { it.copy(multimodalApiKey = key) }
+        saveMultimodalConfig()
+    }
+
+    fun setLanguage(lang: String) {
+        _uiState.update { it.copy(language = lang) }
+        viewModelScope.launch { settingsRepository.setLanguage(lang) }
+    }
+
+    fun saveMultimodalConfig() {
+        viewModelScope.launch {
+            val s = _uiState.value
+            settingsRepository.saveMultimodalConfig(
+                MultimodalConfig(
+                    apiUrl = s.multimodalApiUrl,
+                    apiKey = s.multimodalApiKey,
+                    providerName = s.multimodalProvider
+                )
+            )
+        }
     }
 }

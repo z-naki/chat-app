@@ -15,8 +15,8 @@ android {
         applicationId = "com.chatapp"
         minSdk = 26
         targetSdk = 35
-        versionCode = 14
-        versionName = "0.0.14-alpha"
+        versionCode = 21
+        versionName = "0.0.21-alpha"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -77,6 +77,7 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
 
     implementation(libs.security.crypto)
+    implementation(libs.biometric)
     implementation(libs.datastore.preferences)
 
     testImplementation(libs.junit)

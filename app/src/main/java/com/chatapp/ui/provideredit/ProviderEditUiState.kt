@@ -9,5 +9,9 @@ data class ProviderEditUiState(
     val model: String = "",
     val showKey: Boolean = false,
     val providerExpanded: Boolean = false,
-    val isLoaded: Boolean = false
+    val isLoaded: Boolean = false,
+    val isAuthenticating: Boolean = false,
+    val isAuthenticated: Boolean = false,
+    val authErrorMessage: String? = null,
+    val customProviderName: String = ""
 )

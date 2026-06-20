@@ -1,7 +1,13 @@
 package com.chatapp.ui.settings
 
+import androidx.compose.animation.AnimatedVisibility
+import com.chatapp.ui.animation.smoothExpandVertically
+import com.chatapp.ui.animation.smoothFadeIn
+import com.chatapp.ui.animation.smoothFadeOut
+import com.chatapp.ui.animation.smoothShrinkVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -38,6 +45,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chatapp.ui.theme.LocalStrings
 import com.chatapp.domain.model.ProviderType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -48,11 +56,12 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val s = LocalStrings.current
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Settings") },
+                title = { Text(s.settings) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
@@ -73,10 +82,14 @@ fun SettingsScreen(
                 .padding(horizontal = 16.dp)
         ) {
             // --- Appearance ---
-            SectionHeader("Appearance")
+            SectionHeader(s.appearance)
             ThemeSelector(
                 currentMode = uiState.themeMode,
                 onSelect = { viewModel.setThemeMode(it) }
+            )
+            LanguageSelector(
+                currentLang = uiState.language,
+                onSelect = { viewModel.setLanguage(it) }
             )
 
             HorizontalDivider(
@@ -85,7 +98,7 @@ fun SettingsScreen(
             )
 
             // --- API Key / Token ---
-            SectionHeader("API Key / Token")
+            SectionHeader(s.apiKeyToken)
 
             val configured = uiState.configuredProviders
             val unconfigured = ProviderType.entries.filter { it !in configured }
@@ -99,12 +112,18 @@ fun SettingsScreen(
             }
 
             // Unconfigured providers (when expanded)
-            if (uiState.showOtherProviders && unconfigured.isNotEmpty()) {
-                unconfigured.forEach { provider ->
-                    ProviderRow(
-                        provider = provider,
-                        onEdit = { onEditProvider(provider) }
-                    )
+            AnimatedVisibility(
+                visible = uiState.showOtherProviders && unconfigured.isNotEmpty(),
+                enter = smoothExpandVertically() + smoothFadeIn(),
+                exit = smoothShrinkVertically() + smoothFadeOut()
+            ) {
+                Column {
+                    unconfigured.forEach { provider ->
+                        ProviderRow(
+                            provider = provider,
+                            onEdit = { onEditProvider(provider) }
+                        )
+                    }
                 }
             }
 
@@ -118,7 +137,7 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "Add Provider",
+                        text = s.addProvider,
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.weight(1f)
@@ -141,7 +160,7 @@ fun SettingsScreen(
             )
 
             // --- Network ---
-            SectionHeader("Network")
+            SectionHeader(s.network)
 
             Row(
                 modifier = Modifier
@@ -151,7 +170,7 @@ fun SettingsScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Proxy",
+                    text = s.proxy,
                     style = MaterialTheme.typography.bodyLarge
                 )
                 Switch(
@@ -160,14 +179,20 @@ fun SettingsScreen(
                 )
             }
 
-            if (uiState.proxyEnabled) {
+            AnimatedVisibility(
+                visible = uiState.proxyEnabled,
+                enter = smoothExpandVertically() + smoothFadeIn(),
+                exit = smoothShrinkVertically() + smoothFadeOut()
+            ) {
                 OutlinedTextField(
                     value = uiState.proxyAddress,
                     onValueChange = { viewModel.setProxyAddress(it) },
                     label = { Text("Proxy Address") },
                     placeholder = { Text("127.0.0.1:7890") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp)
                 )
             }
 
@@ -176,10 +201,51 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.outline
             )
 
+            // --- Third-party Multimodal ---
+            SectionHeader(s.thirdPartyMultimodal)
+
+            OutlinedTextField(
+                value = uiState.multimodalProvider,
+                onValueChange = { viewModel.setMultimodalProvider(it) },
+                label = { Text(s.providerName) },
+                placeholder = { Text("Default") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.multimodalApiUrl,
+                onValueChange = { viewModel.setMultimodalApiUrl(it) },
+                label = { Text(s.apiEndpoint) },
+                placeholder = { Text("https://api.example.com/analyze") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.multimodalApiKey,
+                onValueChange = { viewModel.setMultimodalApiKey(it) },
+                label = { Text(s.apiKey) },
+                placeholder = { Text("Enter API key") },
+                singleLine = true,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 4.dp)
+            )
+
+            HorizontalDivider(
+                modifier = Modifier.padding(vertical = 12.dp),
+                color = MaterialTheme.colorScheme.outline
+            )
+
             // --- About ---
-            SectionHeader("About")
+            SectionHeader(s.about)
             Text(
-                text = "Version 0.0.14-alpha",
+                text = "${s.version} 0.0.21-alpha",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -200,40 +266,84 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
+private fun LanguageSelector(
+    currentLang: String,
+    onSelect: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val s = LocalStrings.current
+    val label = when (currentLang) { "zh" -> "中文" else -> "English" }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth().clickable { expanded = true }.padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(text = s.language, style = MaterialTheme.typography.bodyLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(text = label, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown, null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+        Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                listOf("en" to "English", "zh" to "中文").forEach { (value, name) ->
+                    DropdownMenuItem(text = { Text(name) }, onClick = { onSelect(value); expanded = false })
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun ThemeSelector(
     currentMode: String,
     onSelect: (String) -> Unit
 ) {
     var expanded by remember { mutableStateOf(false) }
+    val s = LocalStrings.current
     val label = when (currentMode) {
-        "light" -> "Light"
-        "dark" -> "Dark"
-        else -> "System"
+        "light" -> s.light
+        "dark" -> s.dark
+        else -> s.system
     }
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { expanded = true }
-            .padding(vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(text = "Theme", style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
+    Box(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { expanded = true }
+                .padding(vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            listOf("system" to "System", "light" to "Light", "dark" to "Dark").forEach { (value, name) ->
-                DropdownMenuItem(
-                    text = { Text(name) },
-                    onClick = { onSelect(value); expanded = false }
+            Text(text = s.theme, style = MaterialTheme.typography.bodyLarge)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Icon(
+                    imageVector = if (expanded) Icons.Default.ArrowDropUp else Icons.Default.ArrowDropDown,
+                    contentDescription = if (expanded) "Collapse" else "Expand",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        }
+        // Anchor at bottom-end: DropdownMenu expands from right, below the Row
+        Box(modifier = Modifier.align(Alignment.BottomEnd)) {
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                listOf("system" to s.system, "light" to s.light, "dark" to s.dark).forEach { (value, name) ->
+                    DropdownMenuItem(
+                        text = { Text(name) },
+                        onClick = { onSelect(value); expanded = false }
+                    )
+                }
             }
         }
     }
@@ -252,13 +362,14 @@ private fun ProviderRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val s = LocalStrings.current
         Text(
             text = provider.displayName,
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "Edit",
+            text = s.edit,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier
@@ -267,3 +378,4 @@ private fun ProviderRow(
         )
     }
 }
+

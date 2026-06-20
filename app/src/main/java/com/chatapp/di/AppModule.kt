@@ -6,8 +6,14 @@ import com.chatapp.data.local.db.AppDatabase
 import com.chatapp.data.local.db.dao.ConversationDao
 import com.chatapp.data.local.db.dao.MessageDao
 import com.chatapp.data.local.prefs.SecurePrefs
+import com.chatapp.data.remote.provider.CustomProvider
 import com.chatapp.data.remote.provider.ProviderRouter
+import com.chatapp.data.remote.provider.anthropic.AnthropicProvider
 import com.chatapp.data.remote.provider.deepseek.DeepSeekProvider
+import com.chatapp.data.remote.provider.gemini.GeminiProvider
+import com.chatapp.data.remote.provider.openai.MoonshotProvider
+import com.chatapp.data.remote.provider.openai.OpenAiProvider
+import com.chatapp.data.remote.provider.openai.QwenProvider
 import com.chatapp.data.repository.ChatRepositoryImpl
 import com.chatapp.data.repository.SettingsRepositoryImpl
 import com.chatapp.domain.repository.ChatRepository
@@ -19,7 +25,6 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
 
@@ -54,9 +59,6 @@ object AppModule {
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.SECONDS) // no timeout for streaming
             .writeTimeout(30, TimeUnit.SECONDS)
-            .addInterceptor(HttpLoggingInterceptor().apply {
-                level = HttpLoggingInterceptor.Level.NONE
-            })
             .build()
     }
 
@@ -64,10 +66,22 @@ object AppModule {
     @Singleton
     fun provideProviderRouter(
         securePrefs: SecurePrefs,
-        deepSeekProvider: DeepSeekProvider
+        deepSeekProvider: DeepSeekProvider,
+        openAiProvider: OpenAiProvider,
+        anthropicProvider: AnthropicProvider,
+        geminiProvider: GeminiProvider,
+        moonshotProvider: MoonshotProvider,
+        qwenProvider: QwenProvider,
+        customProvider: CustomProvider
     ): ProviderRouter {
         return ProviderRouter(securePrefs).apply {
             register(deepSeekProvider)
+            register(openAiProvider)
+            register(anthropicProvider)
+            register(geminiProvider)
+            register(moonshotProvider)
+            register(qwenProvider)
+            register(customProvider)
         }
     }
 

@@ -5,9 +5,13 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.chatapp.domain.model.Attachment
 import com.chatapp.domain.model.Message
 import com.chatapp.domain.model.MessageRole
 import com.chatapp.domain.model.MessageStatus
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.decodeFromString
 
 @Entity(
     tableName = "messages",
@@ -27,6 +31,7 @@ data class MessageEntity(
     @ColumnInfo(name = "role") val role: String,
     @ColumnInfo(name = "content") val content: String,
     @ColumnInfo(name = "thinking") val thinking: String?,
+    @ColumnInfo(name = "attachments") val attachmentsJson: String = "[]",
     @ColumnInfo(name = "timestamp") val timestamp: Long,
     @ColumnInfo(name = "status") val status: String
 ) {
@@ -36,19 +41,28 @@ data class MessageEntity(
         role = MessageRole.fromStringOrDefault(role),
         content = content,
         thinking = thinking,
+        attachments = parseAttachments(attachmentsJson),
         timestamp = timestamp,
         status = runCatching { MessageStatus.valueOf(status) }.getOrDefault(MessageStatus.COMPLETE)
     )
 
     companion object {
+        private val json = Json { ignoreUnknownKeys = true }
+
         fun fromDomain(msg: Message): MessageEntity = MessageEntity(
             id = msg.id,
             conversationId = msg.conversationId,
             role = msg.role.name,
             content = msg.content,
             thinking = msg.thinking,
+            attachmentsJson = json.encodeToString(msg.attachments),
             timestamp = msg.timestamp,
             status = msg.status.name
         )
+
+        private fun parseAttachments(raw: String): List<Attachment> {
+            return if (raw.isBlank() || raw == "[]") emptyList()
+            else runCatching { json.decodeFromString<List<Attachment>>(raw) }.getOrDefault(emptyList())
+        }
     }
 }

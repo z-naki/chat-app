@@ -14,7 +14,9 @@ interface ChatRepository {
         provider: ProviderType,
         temperature: Float = 0.7f,
         maxTokens: Int = 384_000,
-        contextRounds: Int = 20
+        contextRounds: Int = 20,
+        multimodalEnabled: Boolean = false,
+        topP: Float = 0.9f
     ): Conversation
     suspend fun updateConversationParameters(
         conversationId: Long,
@@ -22,10 +24,14 @@ interface ChatRepository {
         maxTokens: Int,
         contextRounds: Int
     )
+    suspend fun fetchAvailableModels(): List<String>
     suspend fun deleteConversation(conversationId: Long)
     fun getMessages(conversationId: Long): Flow<List<Message>>
     suspend fun saveMessage(message: Message): Long
     suspend fun updateMessageContent(messageId: Long, content: String, thinking: String?)
+    suspend fun deleteMessage(messageId: Long)
+    suspend fun updateConversationMultimodal(conversationId: Long, enabled: Boolean)
+    suspend fun updateConversationTopP(conversationId: Long, topP: Float)
     fun streamReply(
         conversation: Conversation,
         messages: List<Message>,

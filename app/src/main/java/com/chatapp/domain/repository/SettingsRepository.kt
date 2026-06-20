@@ -1,5 +1,6 @@
 package com.chatapp.domain.repository
 
+import com.chatapp.domain.model.MultimodalConfig
 import com.chatapp.domain.model.ProviderType
 import kotlinx.coroutines.flow.Flow
 
@@ -13,10 +14,14 @@ interface SettingsRepository {
     suspend fun getProviderModel(providerType: ProviderType): String
     suspend fun getActiveProvider(): ProviderType
     suspend fun setActiveProvider(type: ProviderType)
+    suspend fun saveMultimodalConfig(config: MultimodalConfig)
+    suspend fun getMultimodalConfig(): MultimodalConfig
     fun isProxyEnabled(): Flow<Boolean>
     suspend fun setProxyEnabled(enabled: Boolean)
     fun getProxyAddress(): Flow<String>
     suspend fun setProxyAddress(address: String)
     fun getThemeMode(): Flow<String>
     suspend fun setThemeMode(mode: String)
+    fun getLanguage(): Flow<String>
+    suspend fun setLanguage(lang: String)
 }

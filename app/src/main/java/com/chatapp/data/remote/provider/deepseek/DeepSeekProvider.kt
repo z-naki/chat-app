@@ -9,9 +9,11 @@ import com.chatapp.domain.model.ChatRequest
 import com.chatapp.domain.model.ChatResponse
 import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.StreamChunk
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -20,6 +22,9 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 import kotlinx.serialization.json.putJsonArray
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -27,10 +32,14 @@ import javax.inject.Singleton
 class DeepSeekProvider @Inject constructor(
     private val sseClient: SseClient,
     private val securePrefs: SecurePrefs,
-    private val json: Json
+    private val json: Json,
+    private val okHttpClient: OkHttpClient
 ) : AiProvider {
 
     override val type: ProviderType = ProviderType.DEEPSEEK
+    override val supportsThinking: Boolean = true
+
+    override fun supportsFileType(mimeType: String): Boolean = mimeType.startsWith("image/")
 
     companion object {
         private const val BASE_URL = "https://api.deepseek.com"
@@ -38,6 +47,31 @@ class DeepSeekProvider @Inject constructor(
 
     override suspend fun chat(request: ChatRequest): ChatResponse {
         error("Use stream() for chat completions")
+    }
+
+    override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
+        try {
+            val apiKey = securePrefs.getApiKey("DEEPSEEK") ?: return@withContext emptyList()
+            val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
+            val client = okHttpClient.newBuilder()
+                .readTimeout(10, TimeUnit.SECONDS)
+                .build()
+            val request = Request.Builder()
+                .url("$baseUrl/models")
+                .header("Authorization", "Bearer $apiKey")
+                .header("Accept", "application/json")
+                .get()
+                .build()
+            val response = client.newCall(request).execute()
+            val body = response.body?.string() ?: return@withContext emptyList()
+            if (!response.isSuccessful) return@withContext emptyList()
+            val obj = json.parseToJsonElement(body).jsonObject
+            val data = obj["data"]?.jsonArray ?: return@withContext emptyList()
+            data.map { it.jsonObject["id"]?.jsonPrimitive?.content ?: "" }.filter { it.isNotEmpty() }
+        } catch (e: Exception) {
+            DebugLog.log("DeepSeek", "fetchModels failed: ${e.message}")
+            emptyList()
+        }
     }
 
     override fun stream(request: ChatRequest): Flow<StreamChunk> {
@@ -85,13 +119,38 @@ class DeepSeekProvider @Inject constructor(
             put("stream", true)
             put("max_tokens", request.maxTokens)
             put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
-            put("thinking", buildJsonObject { put("type", "enabled") })
-            put("reasoning_effort", "high")
+            request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
+            // Only enable thinking for reasoning-capable models, not deepseek-chat
+            val modelName = securePrefs.getProviderModel("DEEPSEEK").ifEmpty { "deepseek-v4-pro" }
+            if (!modelName.contains("chat")) {
+                put("thinking", buildJsonObject { put("type", "enabled") })
+                put("reasoning_effort", "high")
+            }
             putJsonArray("messages") {
                 request.messages.forEach { msg ->
                     add(buildJsonObject {
                         put("role", msg.role)
-                        put("content", msg.content)
+                        val imageAttachments = msg.attachments.filter {
+                            it.type == com.chatapp.domain.model.AttachmentType.IMAGE && it.dataBase64.isNotBlank()
+                        }
+                        if (imageAttachments.isNotEmpty()) {
+                            putJsonArray("content") {
+                                add(buildJsonObject {
+                                    put("type", "text")
+                                    put("text", msg.content)
+                                })
+                                imageAttachments.forEach { att ->
+                                    add(buildJsonObject {
+                                        put("type", "image_url")
+                                        put("image_url", buildJsonObject {
+                                            put("url", "data:${att.mimeType};base64,${att.dataBase64}")
+                                        })
+                                    })
+                                }
+                            }
+                        } else {
+                            put("content", msg.content)
+                        }
                     })
                 }
             }
@@ -99,8 +158,12 @@ class DeepSeekProvider @Inject constructor(
                 putJsonArray("tools") {
                     add(buildJsonObject {
                         put("type", "web_search")
+                        put("web_search", buildJsonObject {
+                            put("enable", true)
+                        })
                     })
                 }
+                put("tool_choice", "auto")
             }
         }
         return json.encodeToString(JsonObject.serializer(), obj)
@@ -124,29 +187,30 @@ class DeepSeekProvider @Inject constructor(
                 if (delta == null && message == null) continue
                 val active = delta ?: message ?: continue
 
+                // Check for search results
+                val searchResults = active["search_results"]
+                if (searchResults != null) {
+                    DebugLog.log("DS", "S2_SEARCH found search_results")
+                    val query = active["search_query"]?.jsonPrimitive?.content
+                    if (!query.isNullOrEmpty()) {
+                        DebugLog.log("DS", "S4_RET SearchStatus('${query.take(100)}')")
+                        return StreamChunk.SearchStatus(query)
+                    }
+                }
+
                 // Check for thinking content (deepseek-v4-pro may emit reasoning)
                 val thinkingElem = active["reasoning_content"]
-                val thinkingClass = thinkingElem?.javaClass?.simpleName ?: "null"
                 val thinking = thinkingElem?.jsonPrimitive?.content
-                val thinkingStr = if (thinking == null) "<NULL>" else "'${thinking.take(50)}'"
-                DebugLog.log("DS", "S2_THINK class=$thinkingClass val=$thinkingStr")
-
                 if (!thinking.isNullOrEmpty() && thinking != "null") {
                     DebugLog.log("DS", "S4_RET Thinking('${thinking.take(100)}')")
                     return StreamChunk.Thinking(thinking)
                 }
 
                 val contentElem = active["content"]
-                val contentClass = contentElem?.javaClass?.simpleName ?: "null"
                 val content = contentElem?.jsonPrimitive?.content
-                val contentStr = if (content == null) "<NULL>" else "'$content'"
-                DebugLog.log("DS", "S3_CNT class=$contentClass val=$contentStr")
-
                 if (!content.isNullOrEmpty() && content != "null") {
                     DebugLog.log("DS", "S4_RET Content('${content.take(100)}')")
                     return StreamChunk.Content(content)
-                } else {
-                    DebugLog.log("DS", "S3_SKIP empty=${content.isNullOrEmpty()} isNull=${content == "null"}")
                 }
             }
 

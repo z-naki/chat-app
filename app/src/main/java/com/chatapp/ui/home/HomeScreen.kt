@@ -1,20 +1,30 @@
 package com.chatapp.ui.home
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.List
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.SearchOff
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.DropdownMenu
@@ -26,13 +36,17 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -40,11 +54,14 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.chatapp.ui.theme.LocalStrings
 import com.chatapp.domain.model.Conversation
 import com.chatapp.ui.chat.ChatScreen
+import com.chatapp.ui.chat.ChatViewModel
 import com.chatapp.ui.conversationlist.ConversationListViewModel
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
@@ -54,14 +71,31 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
+    conversationId: Long,
     onConversationClick: (Long) -> Unit,
     onSettingsClick: () -> Unit,
     convListViewModel: ConversationListViewModel = hiltViewModel()
 ) {
     val drawerState = rememberDrawerState(DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+    val s = LocalStrings.current
     val convUiState by convListViewModel.uiState.collectAsStateWithLifecycle()
+    val chatViewModel: ChatViewModel = hiltViewModel()
+    val chatUiState by chatViewModel.uiState.collectAsStateWithLifecycle()
+    var showMenu by remember { mutableStateOf(false) }
     var deleteConfirmId by remember { mutableStateOf<Long?>(null) }
+    val temp = chatUiState.temperature
+    val maxTokens = chatUiState.maxTokensUi
+    val contextRounds = chatUiState.contextRounds
+    val multimodalEnabled = chatUiState.conversation?.multimodalEnabled ?: chatUiState.multimodalEnabled
+    val topP = chatUiState.topP
+    val supportsTopP = chatViewModel.supportsTopP()
+    val totalTokens = chatUiState.messages.sumOf { (it.content.length / 2.5).toLong() + (it.thinking?.length?.div(2.5)?.toLong() ?: 0L) }
+    val tokenDisplay = when {
+        totalTokens >= 1_000_000 -> "${"%.1f".format(totalTokens / 1_000_000.0)}M"
+        totalTokens >= 1_000 -> "${"%.1f".format(totalTokens / 1_000.0)}k"
+        else -> "$totalTokens"
+    }
 
     val grouped = groupByDay(convUiState.conversations)
 
@@ -76,7 +110,7 @@ fun HomeScreen(
                 ) {
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
-                        text = "History",
+                        text = s.history,
                         style = MaterialTheme.typography.titleLarge,
                         color = MaterialTheme.colorScheme.onSurface
                     )
@@ -84,7 +118,7 @@ fun HomeScreen(
 
                     if (convUiState.conversations.isEmpty()) {
                         Text(
-                            text = "No conversations yet",
+                            text = s.noConversations,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -133,28 +167,30 @@ fun HomeScreen(
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
                                         }
-                                        IconButton(
-                                            onClick = { showMenu = true },
-                                            modifier = Modifier.padding(start = 4.dp)
-                                        ) {
-                                            Icon(
-                                                imageVector = Icons.Default.MoreVert,
-                                                contentDescription = "More",
-                                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                                            )
-                                        }
-                                        DropdownMenu(
-                                            expanded = showMenu,
-                                            onDismissRequest = { showMenu = false },
-                                            offset = androidx.compose.ui.unit.DpOffset(x = (-40).dp, y = 0.dp)
-                                        ) {
-                                            DropdownMenuItem(
-                                                text = { Text("Delete") },
-                                                onClick = {
-                                                    showMenu = false
-                                                    deleteConfirmId = conversation.id
-                                                }
-                                            )
+                                        Box {
+                                            IconButton(
+                                                onClick = { showMenu = true },
+                                                modifier = Modifier.padding(start = 4.dp)
+                                            ) {
+                                                Icon(
+                                                    imageVector = Icons.Default.MoreVert,
+                                                    contentDescription = "More",
+                                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            DropdownMenu(
+                                                expanded = showMenu,
+                                                onDismissRequest = { showMenu = false },
+                                                offset = androidx.compose.ui.unit.DpOffset(x = (-40).dp, y = 0.dp)
+                                            ) {
+                                                DropdownMenuItem(
+                                                    text = { Text(s.delete) },
+                                                    onClick = {
+                                                        showMenu = false
+                                                        deleteConfirmId = conversation.id
+                                                    }
+                                                )
+                                            }
                                         }
                                     }
                                 }
@@ -176,7 +212,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Settings",
+                            text = s.settings,
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -190,7 +226,7 @@ fun HomeScreen(
                 TopAppBar(
                     title = {
                         Text(
-                            text = "Chat AI v0.0.14-a",
+                            text = if (totalTokens > 0) "$tokenDisplay ${s.tokens}" else "Chat AI",
                             style = MaterialTheme.typography.titleLarge
                         )
                     },
@@ -200,26 +236,121 @@ fun HomeScreen(
                         }) {
                             Icon(
                                 imageVector = Icons.Default.Menu,
-                                contentDescription = "Open history"
+                                contentDescription = s.history
                             )
                         }
                     },
+                    actions = {
+                        val searchSupported = chatViewModel.supportsSearch()
+                        IconButton(
+                            onClick = { if (searchSupported) chatViewModel.toggleSearch() },
+                            modifier = Modifier.size(32.dp),
+                            enabled = searchSupported
+                        ) {
+                            Icon(
+                                imageVector = if (chatUiState.enableSearch) Icons.Filled.Search else Icons.Filled.SearchOff,
+                                contentDescription = s.search,
+                                tint = when {
+                                    !searchSupported -> MaterialTheme.colorScheme.onSurface.copy(alpha = 0.2f)
+                                    chatUiState.enableSearch -> MaterialTheme.colorScheme.primary
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                },
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        IconButton(onClick = { onConversationClick(-1L) }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = s.newConversation,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                        }
+                        Box {
+                            IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    imageVector = Icons.Default.MoreVert,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false }
+                            ) {
+                                Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
+                                    // Model selector
+                                    Text(s.model, style = MaterialTheme.typography.labelSmall)
+                                    Column(
+                                        modifier = Modifier.heightIn(max = 120.dp).width(180.dp)
+                                            .verticalScroll(rememberScrollState())
+                                    ) {
+                                        val models = chatUiState.availableModels.ifEmpty { listOf(chatUiState.currentModel) }
+                                        models.forEach { m ->
+                                            Text(
+                                                text = m, style = MaterialTheme.typography.bodySmall,
+                                                color = if (m == chatUiState.currentModel) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                                                modifier = Modifier.padding(vertical = 2.dp).clickable { chatViewModel.selectModel(m) }
+                                            )
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    HorizontalDivider()
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text("${s.temperature}: ${"%.2f".format(temp)}", style = MaterialTheme.typography.labelSmall)
+                                    Slider(value = temp, onValueChange = { chatViewModel.updateTemperature(it) }, valueRange = 0f..2f, modifier = Modifier.width(180.dp).height(32.dp))
+                                    Text("Top-p (${s.topP}): ${"%.2f".format(topP)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTopP) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
+                                    Slider(value = topP, onValueChange = { chatViewModel.updateTopP(it) }, valueRange = 0f..1f, enabled = supportsTopP, modifier = Modifier.width(180.dp).height(32.dp))
+                                    OutlinedTextField(
+                                        value = contextRounds.toString(), onValueChange = { v -> v.toIntOrNull()?.let { chatViewModel.updateContextRounds(it) } },
+                                        label = { Text(s.contextRounds) }, singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.width(180.dp).height(52.dp)
+                                    )
+                                    OutlinedTextField(
+                                        value = maxTokens.toString(), onValueChange = { v -> v.toIntOrNull()?.let { chatViewModel.updateMaxTokens(it) } },
+                                        label = { Text(s.maxTokens) }, singleLine = true,
+                                        textStyle = MaterialTheme.typography.bodySmall,
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.width(180.dp).height(52.dp)
+                                    )
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    HorizontalDivider()
+                                    Spacer(modifier = Modifier.height(2.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(text = s.multimodal, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                        Switch(
+                                            checked = multimodalEnabled,
+                                            onCheckedChange = { chatViewModel.toggleMultimodal() },
+                                            modifier = Modifier.height(24.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    },
                     colors = TopAppBarDefaults.topAppBarColors(
-                        containerColor = MaterialTheme.colorScheme.background,
-                        titleContentColor = MaterialTheme.colorScheme.onBackground
+                        containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
             },
             containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
-            ChatScreen(
-                conversationId = -1L,
-                onBack = {},
-                onConversationCreated = { newId ->
-                    onConversationClick(newId)
-                },
-                modifier = Modifier.padding(padding)
-            )
+            key(conversationId) {
+                ChatScreen(
+                    conversationId = conversationId,
+                    onBack = { onConversationClick(-1L) },
+                    onConversationCreated = { newId ->
+                        onConversationClick(newId)
+                    },
+                    modifier = Modifier.padding(padding)
+                )
+            }
         }
     }
 
@@ -227,19 +358,19 @@ fun HomeScreen(
     deleteConfirmId?.let { id ->
         AlertDialog(
             onDismissRequest = { deleteConfirmId = null },
-            title = { Text("Delete Conversation") },
-            text = { Text("Are you sure you want to delete this conversation? All messages will be removed.") },
+            title = { Text("${s.delete} Conversation") },
+            text = { Text(if (LocalStrings.current == com.chatapp.ui.theme.ZH) "确定删除？所有消息将被移除。" else "Delete this conversation? All messages will be removed.") },
             confirmButton = {
                 TextButton(onClick = {
                     convListViewModel.deleteConversation(id)
                     deleteConfirmId = null
                 }) {
-                    Text("Delete")
+                    Text(s.delete)
                 }
             },
             dismissButton = {
                 TextButton(onClick = { deleteConfirmId = null }) {
-                    Text("Cancel")
+                    Text(s.cancel)
                 }
             }
         )

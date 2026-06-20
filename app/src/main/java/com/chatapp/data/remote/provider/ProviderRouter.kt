@@ -23,8 +23,13 @@ class ProviderRouter @Inject constructor(
     fun getActive(): AiProvider {
         val activeType = securePrefs.getActiveProvider()
         val type = ProviderType.fromStringOrDefault(activeType)
-        return resolve(type)
+        return providers[type] ?: providers.values.firstOrNull()
+            ?: throw IllegalStateException("No AI providers registered")
     }
 
     fun getAll(): Set<ProviderType> = providers.keys
+
+    suspend fun fetchAvailableModels(): List<String> {
+        return getActive().fetchAvailableModels()
+    }
 }

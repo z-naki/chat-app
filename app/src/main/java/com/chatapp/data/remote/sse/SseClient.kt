@@ -49,7 +49,6 @@ class SseClient @Inject constructor(
                     val code = response.code
                     val message = response.body?.string() ?: "HTTP $code"
                     DebugLog.log("SSE", "HTTP error $code: $message")
-                    DebugLog.log("SSE", "HTTP error $code: $message")
                     trySend(SseEvent.Error(HttpException(code, message)))
                     close()
                     return
@@ -70,8 +69,8 @@ class SseClient @Inject constructor(
                         val ln = line ?: break
 
                         when {
-                            ln.startsWith("data: ") -> {
-                                currentData.append(ln.removePrefix("data: "))
+                            ln.startsWith("data:") -> {
+                                currentData.append(ln.removePrefix("data:").trimStart())
                             }
                             ln.isEmpty() && currentData.isNotEmpty() -> {
                                 val data = currentData.toString().trim()

@@ -27,6 +27,12 @@ interface ConversationDao {
     @Query("UPDATE conversations SET temperature = :temperature, max_tokens = :maxTokens, context_rounds = :contextRounds WHERE id = :id")
     suspend fun updateParameters(id: Long, temperature: Float, maxTokens: Int, contextRounds: Int)
 
+    @Query("UPDATE conversations SET top_p = :topP WHERE id = :id")
+    suspend fun updateTopP(id: Long, topP: Float)
+
+    @Query("UPDATE conversations SET multimodal_enabled = :enabled WHERE id = :id")
+    suspend fun updateMultimodal(id: Long, enabled: Boolean)
+
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun delete(id: Long)
 }

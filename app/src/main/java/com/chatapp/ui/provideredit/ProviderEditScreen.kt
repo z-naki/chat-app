@@ -33,10 +33,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.fragment.app.FragmentActivity
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.chatapp.domain.model.ProviderType
@@ -51,9 +54,15 @@ fun ProviderEditScreen(
     viewModel: ProviderEditViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val activity = LocalContext.current as FragmentActivity
 
     LaunchedEffect(providerType) {
         viewModel.loadProvider(providerType)
+    }
+
+    // Keep activity reference current across rotations
+    SideEffect {
+        viewModel.setActivity(activity)
     }
 
     Scaffold(
@@ -113,7 +122,10 @@ fun ProviderEditScreen(
                         PasswordVisualTransformation()
                     },
                     trailingIcon = {
-                        IconButton(onClick = { viewModel.toggleKeyVisibility() }) {
+                        IconButton(
+                            onClick = { viewModel.toggleKeyVisibility() },
+                            enabled = !uiState.isAuthenticating
+                        ) {
                             Icon(
                                 imageVector = if (uiState.showKey) {
                                     Icons.Default.Visibility
@@ -133,6 +145,16 @@ fun ProviderEditScreen(
                     label = { Text("Base URL") },
                     singleLine = true,
                     modifier = Modifier.weight(1f)
+                )
+            }
+
+            // Auth error
+            uiState.authErrorMessage?.let { error ->
+                Text(
+                    text = error,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 4.dp)
                 )
             }
 
@@ -159,6 +181,13 @@ fun ProviderEditScreen(
             ) {
                 Text("Save")
             }
+
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = "支持 OpenAI 兼容 API 格式",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
         }
