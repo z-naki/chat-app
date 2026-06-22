@@ -57,7 +57,7 @@ class AnthropicProvider @Inject constructor(
     override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
         try {
             // Anthropic has no official list-models endpoint; return well-known models
-            val apiKey = securePrefs.getApiKey("ANTHROPIC") ?: return@withContext DEFAULT_MODELS
+            val apiKey = securePrefs.getApiKey(type.name) ?: return@withContext DEFAULT_MODELS
             // Verify API key works by checking a simple health endpoint or just return defaults
             DEFAULT_MODELS
         } catch (e: Exception) {
@@ -70,13 +70,13 @@ class AnthropicProvider @Inject constructor(
         DebugLog.log("Anthropic", "stream() called")
         val apiKey: String
         try {
-            apiKey = securePrefs.getApiKey("ANTHROPIC")
+            apiKey = securePrefs.getApiKey(type.name)
                 ?: return flow { emit(StreamChunk.Error(IllegalStateException("Anthropic API Key not configured"))) }
         } catch (e: Exception) {
             return flow { emit(StreamChunk.Error(e)) }
         }
 
-        val baseUrl = securePrefs.getProviderBaseUrl("ANTHROPIC").ifEmpty { BASE_URL }
+        val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
         val body = buildRequestBody(request)
         return sseClient.connect(
             url = "$baseUrl/v1/messages",
@@ -96,7 +96,7 @@ class AnthropicProvider @Inject constructor(
     }
 
     private fun buildRequestBody(request: ChatRequest): String {
-        val model = securePrefs.getProviderModel("ANTHROPIC").ifEmpty { "claude-sonnet-4-6" }
+        val model = securePrefs.getProviderModel(type.name).ifEmpty { "claude-sonnet-4-6" }
         val enableThinking = model.contains("opus") || model.contains("sonnet") || model.contains("haiku") || model.contains("fable")
         // Cap max_tokens: Claude models support up to 16384 output tokens
         val effectiveMaxTokens = minOf(request.maxTokens, 16384)
@@ -151,6 +151,13 @@ class AnthropicProvider @Inject constructor(
                         }
                     })
                 }
+            }
+            // Merge custom params (user-provided JSON overrides keys above)
+            request.customParams?.let { raw ->
+                try {
+                    val customObj = json.parseToJsonElement(raw).jsonObject
+                    customObj.forEach { (key, value) -> put(key, value) }
+                } catch (_: Exception) { }
             }
         }
         return json.encodeToString(JsonObject.serializer(), obj)

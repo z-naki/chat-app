@@ -59,16 +59,36 @@ class ChatViewModel @Inject constructor(
         messagesJob?.cancel()
         messagesJob = viewModelScope.launch {
             val conversation = chatRepository.getConversation(id)
-            _uiState.update {
-                it.copy(
-                    conversation = conversation,
-                    temperature = conversation?.temperature ?: 0.7f,
-                    contextRounds = conversation?.contextRounds ?: 20,
-                    maxTokensUi = conversation?.maxTokens ?: 384_000,
-                    topP = conversation?.topP ?: 0.9f,
-                    multimodalEnabled = conversation?.multimodalEnabled ?: false,
-                    messages = emptyList() // Clear old messages immediately
-                )
+            val convProvider = conversation?.provider
+            // Restore provider/model from conversation so UI matches streamReply routing
+            if (convProvider != null) {
+                settingsRepository.setActiveProvider(convProvider)
+                val model = settingsRepository.getProviderModel(convProvider)
+                    .ifEmpty { getProviderDefaultModel(convProvider) }
+                val models = providerRouterFetchModels(convProvider)
+                _uiState.update {
+                    it.copy(
+                        conversation = conversation,
+                        activeProvider = convProvider,
+                        currentModel = model,
+                        availableModels = models.ifEmpty { getProviderFallbackModels(convProvider) },
+                        temperature = conversation.temperature,
+                        contextRounds = conversation.contextRounds,
+                        maxTokensUi = conversation.maxTokens,
+                        topP = conversation.topP,
+                        multimodalEnabled = conversation.multimodalEnabled,
+                        messages = emptyList()
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        conversation = null,
+                        temperature = 0.7f, contextRounds = 20,
+                        maxTokensUi = 384_000, topP = 0.9f,
+                        multimodalEnabled = false, messages = emptyList()
+                    )
+                }
             }
             chatRepository.getMessages(id).collect { messages ->
                 _uiState.update { it.copy(messages = messages) }
@@ -94,15 +114,34 @@ class ChatViewModel @Inject constructor(
         if (conversationId > 0) {
             viewModelScope.launch {
                 val conversation = chatRepository.getConversation(conversationId)
-                _uiState.update {
-                    it.copy(
-                        conversation = conversation,
-                        temperature = conversation?.temperature ?: 0.7f,
-                        contextRounds = conversation?.contextRounds ?: 20,
-                        maxTokensUi = conversation?.maxTokens ?: 384_000,
-                        topP = conversation?.topP ?: 0.9f,
-                        multimodalEnabled = conversation?.multimodalEnabled ?: false
-                    )
+                val convProvider = conversation?.provider
+                // Restore provider/model from conversation so UI matches streamReply routing
+                if (convProvider != null) {
+                    val model = settingsRepository.getProviderModel(convProvider)
+                        .ifEmpty { getProviderDefaultModel(convProvider) }
+                    val models = providerRouterFetchModels(convProvider)
+                    _uiState.update {
+                        it.copy(
+                            conversation = conversation,
+                            activeProvider = convProvider,
+                            currentModel = model,
+                            availableModels = models.ifEmpty { getProviderFallbackModels(convProvider) },
+                            temperature = conversation.temperature,
+                            contextRounds = conversation.contextRounds,
+                            maxTokensUi = conversation.maxTokens,
+                            topP = conversation.topP,
+                            multimodalEnabled = conversation.multimodalEnabled
+                        )
+                    }
+                } else {
+                    _uiState.update {
+                        it.copy(
+                            conversation = null,
+                            temperature = 0.7f, contextRounds = 20,
+                            maxTokensUi = 384_000, topP = 0.9f,
+                            multimodalEnabled = false
+                        )
+                    }
                 }
             }
             viewModelScope.launch {
@@ -128,7 +167,7 @@ class ChatViewModel @Inject constructor(
             viewModelScope.launch {
                 val provider = _uiState.value.activeProvider
                 val models = providerRouterFetchModels(provider)
-                _uiState.update { it.copy(availableModels = models) }
+                _uiState.update { it.copy(availableModels = models.ifEmpty { getProviderFallbackModels(provider) }) }
             }
         }
     }
@@ -141,20 +180,21 @@ class ChatViewModel @Inject constructor(
             // Apply provider-recommended defaults when switching models
             val defaults = getProviderDefaults(provider)
             val convId = _uiState.value.conversation?.id ?: return@launch
-            _uiState.update { it.copy(conversation = it.conversation?.copy(temperature = defaults.temp, maxTokens = defaults.maxTokens, contextRounds = defaults.contextRounds)) }
+            _uiState.update { it.copy(conversation = it.conversation?.copy(temperature = defaults.temp, maxTokens = defaults.maxTokens, contextRounds = defaults.contextRounds, topP = defaults.topP), topP = defaults.topP) }
             chatRepository.updateConversationParameters(convId, defaults.temp, defaults.maxTokens, defaults.contextRounds)
+            chatRepository.updateConversationTopP(convId, defaults.topP)
         }
     }
 
-    private data class ProviderDefaults(val temp: Float, val maxTokens: Int, val contextRounds: Int)
+    private data class ProviderDefaults(val temp: Float, val maxTokens: Int, val contextRounds: Int, val topP: Float = 0.9f)
     private fun getProviderDefaults(provider: ProviderType): ProviderDefaults = when (provider) {
-        ProviderType.DEEPSEEK -> ProviderDefaults(0.7f, 384_000, 20)
-        ProviderType.OPENAI -> ProviderDefaults(0.7f, 16_384, 20)
-        ProviderType.ANTHROPIC -> ProviderDefaults(0.7f, 16_384, 20)
-        ProviderType.GEMINI -> ProviderDefaults(0.9f, 65_536, 20)
-        ProviderType.MOONSHOT -> ProviderDefaults(0.3f, 4_096, 20)
-        ProviderType.QWEN -> ProviderDefaults(0.7f, 8_192, 20)
-        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ProviderDefaults(0.7f, 16_384, 20)
+        ProviderType.DEEPSEEK -> ProviderDefaults(0.7f, 384_000, 20, 0.9f)
+        ProviderType.OPENAI -> ProviderDefaults(0.7f, 16_384, 20, 1.0f)
+        ProviderType.ANTHROPIC -> ProviderDefaults(0.7f, 16_384, 20, 1.0f)
+        ProviderType.GEMINI -> ProviderDefaults(0.9f, 65_536, 20, 0.95f)
+        ProviderType.MOONSHOT -> ProviderDefaults(0.3f, 4_096, 20, 1.0f)
+        ProviderType.QWEN -> ProviderDefaults(0.7f, 8_192, 20, 0.8f)
+        ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ProviderDefaults(0.7f, 16_384, 20, 0.9f)
     }
 
     fun selectProvider(provider: ProviderType) {
@@ -169,6 +209,10 @@ class ChatViewModel @Inject constructor(
             _uiState.update {
                 it.copy(availableModels = models.ifEmpty { getProviderFallbackModels(provider) })
             }
+            // Update the current conversation's provider so streamReply routes correctly
+            val conv = _uiState.value.conversation ?: return@launch
+            chatRepository.updateConversationProvider(conv.id, provider)
+            _uiState.update { it.copy(conversation = conv.copy(provider = provider)) }
         }
     }
 
@@ -228,20 +272,17 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch { chatRepository.updateConversationTopP(convId, p) }
     }
 
-    fun supportsTopP(): Boolean {
-        // DeepSeek thinking models: temperature/top_p are ignored by API
-        if (_uiState.value.activeProvider == ProviderType.DEEPSEEK && !_uiState.value.currentModel.contains("chat")) return false
-        return true
-    }
-
-    fun supportsTemperature(): Boolean {
-        val p = _uiState.value.activeProvider
-        // DeepSeek thinking models: temperature is ignored by API
-        if (p == ProviderType.DEEPSEEK && !_uiState.value.currentModel.contains("chat")) return false
-        return true
+    fun getConfiguredProviders(): List<ProviderType> {
+        return ProviderType.entries.filter { provider ->
+            try {
+                !settingsRepository.getApiKey(provider).isNullOrBlank()
+            } catch (_: Exception) { false }
+        }
     }
 
     fun supportsSearch(): Boolean = _uiState.value.activeProvider == ProviderType.DEEPSEEK
+
+    fun getProviderDisplayName(provider: ProviderType): String = settingsRepository.getProviderDisplayName(provider)
 
     fun updateMaxTokens(tokens: Int) {
         _uiState.update { it.copy(maxTokensUi = tokens, conversation = it.conversation?.copy(maxTokens = tokens)) }
@@ -402,14 +443,17 @@ class ChatViewModel @Inject constructor(
     fun stopGeneration() {
         streamJob?.cancel()
         val partial = _uiState.value.streamingOutput
+        val thinking = _uiState.value.streamingThinking
         val streamingMsg = _uiState.value.messages.lastOrNull { it.status == MessageStatus.STREAMING }
         _uiState.update {
             it.copy(isStreaming = false, streamingOutput = "", streamingThinking = "",
-                messages = if (partial.isEmpty()) it.messages.filterNot { m -> m.id == streamingMsg?.id } else it.messages)
+                messages = it.messages.map { m ->
+                    if (m.id == streamingMsg?.id) m.copy(content = partial, thinking = thinking.ifEmpty { null }, status = MessageStatus.COMPLETE) else m
+                })
         }
-        if (streamingMsg != null && partial.isNotEmpty()) {
+        if (streamingMsg != null && (partial.isNotEmpty() || thinking.isNotEmpty())) {
             viewModelScope.launch {
-                chatRepository.updateMessageContent(streamingMsg.id, partial, null)
+                chatRepository.updateMessageContent(streamingMsg.id, partial, thinking.ifEmpty { null })
             }
         } else if (streamingMsg != null) {
             viewModelScope.launch { chatRepository.deleteMessage(streamingMsg.id) }

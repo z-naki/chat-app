@@ -17,7 +17,7 @@ class SettingsRepositoryImpl @Inject constructor(
         securePrefs.putApiKey(providerType.name, key)
     }
 
-    override suspend fun getApiKey(providerType: ProviderType): String? {
+    override fun getApiKey(providerType: ProviderType): String? {
         return securePrefs.getApiKey(providerType.name)
     }
 
@@ -74,4 +74,12 @@ class SettingsRepositoryImpl @Inject constructor(
     override suspend fun setThemeMode(mode: String) = securePrefs.setThemeMode(mode)
     override fun getLanguage(): Flow<String> = securePrefs.getLanguage()
     override suspend fun setLanguage(lang: String) = securePrefs.setLanguage(lang)
+
+    override fun getProviderDisplayName(provider: ProviderType): String {
+        return if (provider.name.startsWith("CUSTOM")) {
+            securePrefs.getCustomProviderName(provider.name).ifEmpty { provider.displayName }
+        } else {
+            provider.displayName
+        }
+    }
 }

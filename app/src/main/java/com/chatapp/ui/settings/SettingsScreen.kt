@@ -107,7 +107,8 @@ fun SettingsScreen(
             configured.forEach { provider ->
                 ProviderRow(
                     provider = provider,
-                    onEdit = { onEditProvider(provider) }
+                    onEdit = { onEditProvider(provider) },
+                    viewModel = viewModel
                 )
             }
 
@@ -121,7 +122,8 @@ fun SettingsScreen(
                     unconfigured.forEach { provider ->
                         ProviderRow(
                             provider = provider,
-                            onEdit = { onEditProvider(provider) }
+                            onEdit = { onEditProvider(provider) },
+                            viewModel = viewModel
                         )
                     }
                 }
@@ -244,7 +246,7 @@ fun SettingsScreen(
             // --- About ---
             SectionHeader(s.about)
             Text(
-                text = "${s.version} 0.0.21-alpha",
+                text = "${s.version} 1.0.0",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -351,7 +353,8 @@ private fun ThemeSelector(
 @Composable
 private fun ProviderRow(
     provider: ProviderType,
-    onEdit: () -> Unit
+    onEdit: () -> Unit,
+    viewModel: SettingsViewModel
 ) {
     Row(
         modifier = Modifier
@@ -363,7 +366,7 @@ private fun ProviderRow(
     ) {
         val s = LocalStrings.current
         Text(
-            text = provider.displayName,
+            text = viewModel.getProviderDisplayName(provider),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onSurface
         )

@@ -12,3 +12,7 @@ local.properties
 /app/build
 .kotlin/
 .gradle/
+# Internal dev files — not for public repo
+CLAUDE.md
+.claude/
+docs/

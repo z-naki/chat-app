@@ -33,6 +33,9 @@ interface ConversationDao {
     @Query("UPDATE conversations SET multimodal_enabled = :enabled WHERE id = :id")
     suspend fun updateMultimodal(id: Long, enabled: Boolean)
 
+    @Query("UPDATE conversations SET provider = :provider WHERE id = :id")
+    suspend fun updateProvider(id: Long, provider: String)
+
     @Query("DELETE FROM conversations WHERE id = :id")
     suspend fun delete(id: Long)
 }

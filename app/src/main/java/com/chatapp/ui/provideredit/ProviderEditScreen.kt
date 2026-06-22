@@ -124,6 +124,21 @@ fun ProviderEditScreen(
                 )
             }
 
+            // Model field — editable for Anthropic (no /models API) and Custom providers
+            val showModelField = uiState.selectedProvider == ProviderType.ANTHROPIC ||
+                uiState.selectedProvider.name.startsWith("CUSTOM")
+            if (showModelField) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = uiState.model,
+                    onValueChange = { viewModel.onModelChange(it) },
+                    label = { Text(s.model) },
+                    placeholder = { Text("Enter model name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+
             Spacer(modifier = Modifier.height(16.dp))
 
             // API Key and Base URL row

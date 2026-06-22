@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface SettingsRepository {
     suspend fun saveApiKey(providerType: ProviderType, key: String)
-    suspend fun getApiKey(providerType: ProviderType): String?
+    fun getApiKey(providerType: ProviderType): String?
     suspend fun deleteApiKey(providerType: ProviderType)
     suspend fun saveProviderBaseUrl(providerType: ProviderType, url: String)
     suspend fun getProviderBaseUrl(providerType: ProviderType): String
@@ -24,4 +24,5 @@ interface SettingsRepository {
     suspend fun setThemeMode(mode: String)
     fun getLanguage(): Flow<String>
     suspend fun setLanguage(lang: String)
+    fun getProviderDisplayName(provider: ProviderType): String
 }

@@ -21,6 +21,7 @@ import java.util.Locale
 @Composable
 fun ConversationItem(
     conversation: Conversation,
+    providerDisplayName: String = conversation.provider.displayName,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -44,7 +45,7 @@ fun ConversationItem(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = conversation.provider.displayName,
+                    text = providerDisplayName,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -25,7 +25,7 @@ class MainActivity : FragmentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        DebugLog.log("APP", "onCreate version=0.0.13-alpha")
+        DebugLog.log("APP", "onCreate version=1.0.0")
         enableEdgeToEdge()
         setContent {
             val themeMode by settingsRepository.getThemeMode()

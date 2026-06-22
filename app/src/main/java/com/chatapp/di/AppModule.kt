@@ -18,6 +18,8 @@ import com.chatapp.data.remote.provider.openai.OpenAiProvider
 import com.chatapp.data.remote.provider.openai.QwenProvider
 import com.chatapp.data.repository.ChatRepositoryImpl
 import com.chatapp.data.repository.SettingsRepositoryImpl
+import com.chatapp.domain.analyze.HttpMultimodalAnalyzer
+import com.chatapp.domain.analyze.MultimodalAnalyzer
 import com.chatapp.domain.repository.ChatRepository
 import com.chatapp.domain.repository.SettingsRepository
 import dagger.Module
@@ -57,16 +59,42 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
-        return OkHttpClient.Builder()
+    fun provideOkHttpClient(securePrefs: SecurePrefs): OkHttpClient {
+        val builder = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(0, TimeUnit.SECONDS) // no timeout for streaming
             .writeTimeout(30, TimeUnit.SECONDS)
-            // Certificate pinning — add provider cert hashes here
             .certificatePinner(CertificatePinner.Builder()
                 // .add("api.deepseek.com", "sha256/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=")
                 .build())
-            .build()
+
+        // Apply proxy if enabled (requires app restart to take effect after change)
+        if (securePrefs.getProxyEnabledSync()) {
+            val raw = securePrefs.getProxyAddressSync()
+            if (raw.isNotBlank()) {
+                try {
+                    val host: String
+                    val port: Int
+                    if (raw.contains(":")) {
+                        val parts = raw.split(":")
+                        host = parts[0]
+                        port = parts[1].toIntOrNull() ?: 8080
+                    } else {
+                        host = raw
+                        port = 8080
+                    }
+                    val proxy = java.net.Proxy(
+                        java.net.Proxy.Type.HTTP,
+                        java.net.InetSocketAddress(host, port)
+                    )
+                    builder.proxy(proxy)
+                } catch (e: Exception) {
+                    android.util.Log.e("AppModule", "Failed to set proxy: ${e.message}")
+                }
+            }
+        }
+
+        return builder.build()
     }
 
     @Provides
@@ -103,4 +131,8 @@ object AppModule {
     @Provides
     @Singleton
     fun provideSettingsRepository(impl: SettingsRepositoryImpl): SettingsRepository = impl
+
+    @Provides
+    @Singleton
+    fun provideMultimodalAnalyzer(impl: HttpMultimodalAnalyzer): MultimodalAnalyzer = impl
 }

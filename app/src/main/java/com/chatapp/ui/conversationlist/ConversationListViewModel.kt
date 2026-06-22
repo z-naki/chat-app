@@ -3,6 +3,7 @@ package com.chatapp.ui.conversationlist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.chatapp.domain.model.ProviderType
+import com.chatapp.domain.repository.SettingsRepository
 import com.chatapp.domain.usecase.CreateConversationUseCase
 import com.chatapp.domain.usecase.DeleteConversationUseCase
 import com.chatapp.domain.usecase.GetConversationsUseCase
@@ -18,7 +19,8 @@ import javax.inject.Inject
 class ConversationListViewModel @Inject constructor(
     private val getConversationsUseCase: GetConversationsUseCase,
     private val createConversationUseCase: CreateConversationUseCase,
-    private val deleteConversationUseCase: DeleteConversationUseCase
+    private val deleteConversationUseCase: DeleteConversationUseCase,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ConversationListUiState())
@@ -37,6 +39,8 @@ class ConversationListViewModel @Inject constructor(
             createConversationUseCase(title, provider)
         }
     }
+
+    fun getProviderDisplayName(provider: ProviderType): String = settingsRepository.getProviderDisplayName(provider)
 
     fun deleteConversation(conversationId: Long) {
         viewModelScope.launch {

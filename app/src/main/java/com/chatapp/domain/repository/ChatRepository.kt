@@ -32,7 +32,8 @@ interface ChatRepository {
     suspend fun deleteMessage(messageId: Long)
     suspend fun updateConversationMultimodal(conversationId: Long, enabled: Boolean)
     suspend fun updateConversationTopP(conversationId: Long, topP: Float)
-    fun streamReply(
+    suspend fun updateConversationProvider(conversationId: Long, provider: ProviderType)
+    suspend fun streamReply(
         conversation: Conversation,
         messages: List<Message>,
         enableSearch: Boolean

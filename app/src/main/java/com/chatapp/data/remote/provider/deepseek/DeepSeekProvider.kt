@@ -51,8 +51,8 @@ class DeepSeekProvider @Inject constructor(
 
     override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
         try {
-            val apiKey = securePrefs.getApiKey("DEEPSEEK") ?: return@withContext emptyList()
-            val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
+            val apiKey = securePrefs.getApiKey(type.name) ?: return@withContext emptyList()
+            val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
             val client = okHttpClient.newBuilder()
                 .readTimeout(10, TimeUnit.SECONDS)
                 .build()
@@ -78,7 +78,7 @@ class DeepSeekProvider @Inject constructor(
         DebugLog.log("DeepSeek", "stream() called with ${request.messages.size} messages")
         val apiKey: String
         try {
-            apiKey = securePrefs.getApiKey("DEEPSEEK")
+            apiKey = securePrefs.getApiKey(type.name)
                 ?: run {
                     DebugLog.log("DeepSeek", "API key NOT configured")
                     DebugLog.log("DS", "API key NOT configured")
@@ -93,7 +93,7 @@ class DeepSeekProvider @Inject constructor(
             }
         }
 
-        val baseUrl = securePrefs.getProviderBaseUrl("DEEPSEEK").ifEmpty { BASE_URL }
+        val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
         val body = buildRequestBody(request)
         DebugLog.log("DeepSeek", "Connecting to $baseUrl, body=${body.take(300)}")
         return sseClient.connect(
@@ -113,19 +113,16 @@ class DeepSeekProvider @Inject constructor(
     }
 
     private fun buildRequestBody(request: ChatRequest): String {
-        val model = securePrefs.getProviderModel("DEEPSEEK").ifEmpty { "deepseek-v4-pro" }
+        val model = securePrefs.getProviderModel(type.name).ifEmpty { "deepseek-v4-pro" }
         val obj = buildJsonObject {
             put("model", model)
             put("stream", true)
             put("max_tokens", request.maxTokens)
             // Only enable thinking for reasoning-capable models, not deepseek-chat
-            val modelName = securePrefs.getProviderModel("DEEPSEEK").ifEmpty { "deepseek-v4-pro" }
+            val modelName = securePrefs.getProviderModel(type.name).ifEmpty { "deepseek-v4-pro" }
             val isThinking = !modelName.contains("chat")
-            // DeepSeek thinking mode ignores temperature/top_p — skip them to avoid confusion
-            if (!isThinking) {
-                put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
-                request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
-            }
+            put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
+            request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             if (isThinking) {
                 put("thinking", buildJsonObject { put("type", "enabled") })
                 put("reasoning_effort", "high")
@@ -172,6 +169,13 @@ class DeepSeekProvider @Inject constructor(
                     })
                 }
                 put("tool_choice", "auto")
+            }
+            // Merge custom params (user-provided JSON overrides keys above)
+            request.customParams?.let { raw ->
+                try {
+                    val customObj = json.parseToJsonElement(raw).jsonObject
+                    customObj.forEach { (key, value) -> put(key, value) }
+                } catch (_: Exception) { }
             }
         }
         return json.encodeToString(JsonObject.serializer(), obj)

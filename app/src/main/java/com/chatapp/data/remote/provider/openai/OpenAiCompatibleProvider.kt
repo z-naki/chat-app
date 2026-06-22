@@ -131,6 +131,13 @@ open class OpenAiCompatibleProvider(
                     })
                 }
             }
+            // Merge custom params (user-provided JSON overrides keys above)
+            request.customParams?.let { raw ->
+                try {
+                    val customObj = json.parseToJsonElement(raw).jsonObject
+                    customObj.forEach { (key, value) -> put(key, value) }
+                } catch (_: Exception) { }
+            }
         }
         return json.encodeToString(JsonObject.serializer(), obj)
     }

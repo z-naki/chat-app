@@ -92,8 +92,6 @@ fun HomeScreen(
     val contextRounds = chatUiState.contextRounds
     val multimodalEnabled = chatUiState.conversation?.multimodalEnabled ?: chatUiState.multimodalEnabled
     val topP = chatUiState.topP
-    val supportsTopP = chatViewModel.supportsTopP()
-    val supportsTemp = chatViewModel.supportsTemperature()
     val totalTokens = chatUiState.messages.sumOf { (it.content.length / 2.5).toLong() + (it.thinking?.length?.div(2.5)?.toLong() ?: 0L) }
     val tokenDisplay = when {
         totalTokens >= 1_000_000 -> "${"%.1f".format(totalTokens / 1_000_000.0)}M"
@@ -166,7 +164,7 @@ fun HomeScreen(
                                                 maxLines = 1
                                             )
                                             Text(
-                                                text = conversation.provider.displayName,
+                                                text = convListViewModel.getProviderDisplayName(conversation.provider),
                                                 style = MaterialTheme.typography.labelSmall,
                                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                                             )
@@ -285,26 +283,30 @@ fun HomeScreen(
                             ) {
                                 Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)) {
                                     // Provider selector
-                                    Text("Provider", style = MaterialTheme.typography.labelSmall)
+                                    Text(s.provider, style = MaterialTheme.typography.labelSmall)
                                     Column(
                                         modifier = Modifier.heightIn(max = 120.dp).width(180.dp)
                                             .verticalScroll(rememberScrollState())
                                     ) {
-                                        ProviderType.entries.forEach { provider ->
+                                        val configuredProviders = chatViewModel.getConfiguredProviders()
+                                        configuredProviders.forEach { provider ->
                                             Text(
-                                                text = provider.displayName, style = MaterialTheme.typography.bodySmall,
+                                                text = chatViewModel.getProviderDisplayName(provider), style = MaterialTheme.typography.bodySmall,
                                                 color = if (provider == chatUiState.activeProvider) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                                                 modifier = Modifier.padding(vertical = 2.dp).clickable { chatViewModel.selectProvider(provider) }
                                             )
+                                        }
+                                        if (configuredProviders.isEmpty()) {
+                                            Text(s.noConversations, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         }
                                     }
                                     Spacer(modifier = Modifier.height(4.dp))
                                     HorizontalDivider()
                                     Spacer(modifier = Modifier.height(4.dp))
-                                    Text("${s.temperature}: ${"%.2f".format(temp)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTemp) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                                    Slider(value = temp, onValueChange = { chatViewModel.updateTemperature(it) }, valueRange = 0f..2f, enabled = supportsTemp, modifier = Modifier.width(180.dp).height(32.dp))
-                                    Text("${s.topP}: ${"%.2f".format(topP)}", style = MaterialTheme.typography.labelSmall, color = if (supportsTopP) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f))
-                                    Slider(value = topP, onValueChange = { chatViewModel.updateTopP(it) }, valueRange = 0f..1f, enabled = supportsTopP, modifier = Modifier.width(180.dp).height(32.dp))
+                                    Text("${s.temperature}: ${"%.2f".format(temp)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                                    Slider(value = temp, onValueChange = { chatViewModel.updateTemperature(it) }, valueRange = 0f..2f, modifier = Modifier.width(180.dp).height(32.dp))
+                                    Text("${s.topP}: ${"%.2f".format(topP)}", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurface)
+                                    Slider(value = topP, onValueChange = { chatViewModel.updateTopP(it) }, valueRange = 0f..1f, modifier = Modifier.width(180.dp).height(32.dp))
                                     OutlinedTextField(
                                         value = contextRounds.toString(), onValueChange = { v -> v.toIntOrNull()?.let { chatViewModel.updateContextRounds(it) } },
                                         label = { Text(s.contextRounds) }, singleLine = true,

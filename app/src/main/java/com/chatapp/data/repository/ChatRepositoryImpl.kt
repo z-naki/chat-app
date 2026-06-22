@@ -13,7 +13,11 @@ import com.chatapp.domain.model.ProviderType
 import com.chatapp.domain.model.ChatRequest
 import com.chatapp.domain.model.ProviderMessage
 import com.chatapp.domain.model.StreamChunk
+import com.chatapp.domain.analyze.MultimodalAnalyzer
 import com.chatapp.domain.repository.ChatRepository
+import com.chatapp.util.DebugLog
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -24,7 +28,8 @@ class ChatRepositoryImpl @Inject constructor(
     private val conversationDao: ConversationDao,
     private val messageDao: MessageDao,
     private val providerRouter: ProviderRouter,
-    private val securePrefs: SecurePrefs
+    private val securePrefs: SecurePrefs,
+    private val multimodalAnalyzer: MultimodalAnalyzer
 ) : ChatRepository {
 
     override fun getConversations(): Flow<List<Conversation>> {
@@ -104,7 +109,11 @@ class ChatRepositoryImpl @Inject constructor(
         conversationDao.updateTopP(conversationId, topP)
     }
 
-    override fun streamReply(
+    override suspend fun updateConversationProvider(conversationId: Long, provider: ProviderType) {
+        conversationDao.updateProvider(conversationId, provider.name)
+    }
+
+    override suspend fun streamReply(
         conversation: Conversation,
         messages: List<Message>,
         enableSearch: Boolean
@@ -112,36 +121,46 @@ class ChatRepositoryImpl @Inject constructor(
         val provider = providerRouter.resolve(conversation.provider)
         val trimmed = trimContext(messages, conversation.contextRounds)
         val multimodalActive = conversation.multimodalEnabled
-        val providerMessages = trimmed.map { msg ->
-            // Multimodal routing: if enabled and provider doesn't support file type natively,
-            // route through MultimodalAnalyzer (when implemented)
-            val effectiveContent = if (multimodalActive && msg.attachments.any {
-                    it.type == com.chatapp.domain.model.AttachmentType.FILE &&
-                    !provider.supportsFileType(it.mimeType)
-                }) {
-                // TODO: Route through MultimodalAnalyzer to extract text from unsupported files
-                // For now, pass file name as context so the model knows about the attachment
-                val fileAtts = msg.attachments.filter {
-                    it.type == com.chatapp.domain.model.AttachmentType.FILE &&
-                    !provider.supportsFileType(it.mimeType)
+        val providerMessages = coroutineScope {
+            trimmed.map { msg ->
+                // Identify attachments the provider doesn't support natively
+                val unsupported = if (multimodalActive) {
+                    msg.attachments.filter { !provider.supportsFileType(it.mimeType) }
+                } else emptyList()
+
+                // Route unsupported attachments through multimodal analyzer (parallel per message)
+                val analyzedTexts = unsupported.map { att ->
+                    async {
+                        multimodalAnalyzer.analyze(att).fold(
+                            onSuccess = { fc -> fc.text },
+                            onFailure = { e ->
+                                DebugLog.log("Multimodal", "Failed: ${att.name}: ${e.message}")
+                                "[Analyze failed: ${att.name}]"
+                            }
+                        )
+                    }
+                }.map { it.await() }
+
+                val effectiveContent = if (analyzedTexts.isNotEmpty()) {
+                    val extra = analyzedTexts.joinToString("\n\n")
+                    if (msg.content.isNotBlank()) msg.content + "\n\n" + extra else extra
+                } else {
+                    msg.content
                 }
-                val fileNames = fileAtts.joinToString(", ") { it.name }
-                msg.content + "\n\n[Attached files: $fileNames]"
-            } else {
-                msg.content
+
+                ProviderMessage(
+                    role = when (msg.role) {
+                        MessageRole.USER -> "user"
+                        MessageRole.ASSISTANT -> "assistant"
+                        MessageRole.SYSTEM -> "system"
+                    },
+                    content = effectiveContent,
+                    attachments = msg.attachments.filter { att ->
+                        // Only send attachments the provider supports natively
+                        provider.supportsFileType(att.mimeType)
+                    }
+                )
             }
-            ProviderMessage(
-                role = when (msg.role) {
-                    MessageRole.USER -> "user"
-                    MessageRole.ASSISTANT -> "assistant"
-                    MessageRole.SYSTEM -> "system"
-                },
-                content = effectiveContent,
-                attachments = msg.attachments.filter { att ->
-                    // Only send attachments the provider supports natively
-                    provider.supportsFileType(att.mimeType)
-                }
-            )
         }
         val model = securePrefs.getProviderModel(conversation.provider.name)
             .ifEmpty { getDefaultModel(conversation.provider) }

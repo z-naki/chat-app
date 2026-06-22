@@ -74,7 +74,7 @@ fun ChatScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val providerName = uiState.activeProvider.displayName
+    val providerName = viewModel.getProviderDisplayName(uiState.conversation?.provider ?: uiState.activeProvider)
     val modelName = uiState.currentModel
     val s = LocalStrings.current
     val context = LocalContext.current
@@ -166,7 +166,7 @@ fun ChatScreen(
                     var showProviderPicker by remember { mutableStateOf(false) }
                     Box {
                         Text(
-                            text = uiState.activeProvider.displayName,
+                            text = viewModel.getProviderDisplayName(uiState.activeProvider),
                             style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Medium),
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.clickable { showProviderPicker = true }
@@ -179,7 +179,7 @@ fun ChatScreen(
                                 DropdownMenuItem(
                                     text = {
                                         Text(
-                                            text = provider.displayName,
+                                            text = viewModel.getProviderDisplayName(provider),
                                             fontWeight = if (provider == uiState.activeProvider) FontWeight.Bold else FontWeight.Normal
                                         )
                                     },

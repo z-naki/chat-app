@@ -49,8 +49,8 @@ class GeminiProvider @Inject constructor(
 
     override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
         try {
-            val apiKey = securePrefs.getApiKey("GEMINI") ?: return@withContext emptyList()
-            val baseUrl = securePrefs.getProviderBaseUrl("GEMINI").ifEmpty { BASE_URL }
+            val apiKey = securePrefs.getApiKey(type.name) ?: return@withContext emptyList()
+            val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
             val client = okHttpClient.newBuilder()
                 .readTimeout(10, TimeUnit.SECONDS)
                 .build()
@@ -84,14 +84,14 @@ class GeminiProvider @Inject constructor(
         DebugLog.log("Gemini", "stream() called")
         val apiKey: String
         try {
-            apiKey = securePrefs.getApiKey("GEMINI")
+            apiKey = securePrefs.getApiKey(type.name)
                 ?: return flow { emit(StreamChunk.Error(IllegalStateException("Gemini API Key not configured"))) }
         } catch (e: Exception) {
             return flow { emit(StreamChunk.Error(e)) }
         }
 
-        val model = securePrefs.getProviderModel("GEMINI").ifEmpty { "gemini-2.5-flash" }
-        val baseUrl = securePrefs.getProviderBaseUrl("GEMINI").ifEmpty { BASE_URL }
+        val model = securePrefs.getProviderModel(type.name).ifEmpty { "gemini-2.5-flash" }
+        val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
         val body = buildRequestBody(request)
         return sseClient.connect(
             url = "$baseUrl/v1beta/models/$model:streamGenerateContent?alt=sse&key=$apiKey",
@@ -115,14 +115,16 @@ class GeminiProvider @Inject constructor(
         val effectiveMaxTokens = minOf(request.maxTokens, 65536)
 
         val obj = buildJsonObject {
-            // System instruction (if any system messages exist)
-            if (systemMessages.isNotEmpty()) {
+            // System instruction — from request.systemPrompt or system-role messages
+            val systemPromptText = request.systemPrompt
+            if (systemMessages.isNotEmpty() || !systemPromptText.isNullOrBlank()) {
                 put("systemInstruction", buildJsonObject {
                     putJsonArray("parts") {
+                        if (!systemPromptText.isNullOrBlank()) {
+                            add(buildJsonObject { put("text", systemPromptText) })
+                        }
                         systemMessages.forEach { sysMsg ->
-                            add(buildJsonObject {
-                                put("text", sysMsg.content)
-                            })
+                            add(buildJsonObject { put("text", sysMsg.content) })
                         }
                     }
                 })
@@ -157,6 +159,13 @@ class GeminiProvider @Inject constructor(
                 request.topP?.let { put("topP", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
                 put("maxOutputTokens", effectiveMaxTokens)
             })
+            // Merge custom params (user-provided JSON overrides keys above)
+            request.customParams?.let { raw ->
+                try {
+                    val customObj = json.parseToJsonElement(raw).jsonObject
+                    customObj.forEach { (key, value) -> put(key, value) }
+                } catch (_: Exception) { }
+            }
         }
         return json.encodeToString(JsonObject.serializer(), obj)
     }

@@ -146,6 +146,7 @@ fun ConversationListScreen(
                         content = {
                             ConversationItem(
                                 conversation = conversation,
+                                providerDisplayName = viewModel.getProviderDisplayName(conversation.provider),
                                 onClick = { onConversationClick(conversation.id) }
                             )
                         }

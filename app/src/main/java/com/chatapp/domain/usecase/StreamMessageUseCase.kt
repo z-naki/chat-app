@@ -10,7 +10,7 @@ import javax.inject.Inject
 class StreamMessageUseCase @Inject constructor(
     private val chatRepository: ChatRepository
 ) {
-    operator fun invoke(
+    suspend operator fun invoke(
         conversation: Conversation,
         messages: List<Message>,
         enableSearch: Boolean

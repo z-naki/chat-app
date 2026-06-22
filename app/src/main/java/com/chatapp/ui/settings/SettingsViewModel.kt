@@ -105,6 +105,8 @@ class SettingsViewModel @Inject constructor(
         viewModelScope.launch { settingsRepository.setLanguage(lang) }
     }
 
+    fun getProviderDisplayName(provider: ProviderType): String = settingsRepository.getProviderDisplayName(provider)
+
     fun saveMultimodalConfig() {
         viewModelScope.launch {
             val s = _uiState.value

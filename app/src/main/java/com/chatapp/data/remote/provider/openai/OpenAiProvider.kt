@@ -49,8 +49,8 @@ class OpenAiProvider @Inject constructor(
 
     override suspend fun fetchAvailableModels(): List<String> = withContext(Dispatchers.IO) {
         try {
-            val apiKey = securePrefs.getApiKey("OPENAI") ?: return@withContext emptyList()
-            val baseUrl = securePrefs.getProviderBaseUrl("OPENAI").ifEmpty { BASE_URL }
+            val apiKey = securePrefs.getApiKey(type.name) ?: return@withContext emptyList()
+            val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
             val client = okHttpClient.newBuilder()
                 .readTimeout(10, TimeUnit.SECONDS)
                 .build()
@@ -82,13 +82,13 @@ class OpenAiProvider @Inject constructor(
         DebugLog.log("OpenAI", "stream() called")
         val apiKey: String
         try {
-            apiKey = securePrefs.getApiKey("OPENAI")
+            apiKey = securePrefs.getApiKey(type.name)
                 ?: return flow { emit(StreamChunk.Error(IllegalStateException("OpenAI API Key not configured"))) }
         } catch (e: Exception) {
             return flow { emit(StreamChunk.Error(e)) }
         }
 
-        val baseUrl = securePrefs.getProviderBaseUrl("OPENAI").ifEmpty { BASE_URL }
+        val baseUrl = securePrefs.getProviderBaseUrl(type.name).ifEmpty { BASE_URL }
         val body = buildRequestBody(request)
         DebugLog.log("OpenAI", "Connecting to $baseUrl")
         return sseClient.connect(
@@ -108,7 +108,7 @@ class OpenAiProvider @Inject constructor(
     }
 
     private fun buildRequestBody(request: ChatRequest): String {
-        val model = securePrefs.getProviderModel("OPENAI").ifEmpty { "gpt-4o" }
+        val model = securePrefs.getProviderModel(type.name).ifEmpty { "gpt-4o" }
         val isReasoningModel = model.contains("o1") || model.contains("o3") || model.contains("o4")
         // Cap max_tokens: reasoning models support up to 100K, others 16K
         val effectiveMaxTokens = if (isReasoningModel) {
@@ -127,9 +127,9 @@ class OpenAiProvider @Inject constructor(
                 put("reasoning_effort", "high")
             } else {
                 put("max_tokens", effectiveMaxTokens)
-                put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
-                request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             }
+            put("temperature", request.temperature.toDouble().let { (it * 100).toInt() / 100.0 })
+            request.topP?.let { put("top_p", it.toDouble().let { v -> (v * 100).toInt() / 100.0 }) }
             putJsonArray("messages") {
                 request.systemPrompt?.let { sp ->
                     add(buildJsonObject { put("role", "system"); put("content", sp) })
@@ -160,6 +160,13 @@ class OpenAiProvider @Inject constructor(
                         }
                     })
                 }
+            }
+            // Merge custom params (user-provided JSON overrides keys above)
+            request.customParams?.let { raw ->
+                try {
+                    val customObj = json.parseToJsonElement(raw).jsonObject
+                    customObj.forEach { (key, value) -> put(key, value) }
+                } catch (_: Exception) { }
             }
         }
         return json.encodeToString(JsonObject.serializer(), obj)

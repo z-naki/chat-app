@@ -86,7 +86,7 @@ class SecurePrefs @Inject constructor(
         encryptedPrefs.edit().putString("active_provider", provider).apply()
     }
 
-    // --- Proxy (in DataStore, not encrypted) ---
+    // --- Proxy (DataStore for reactive UI + EncryptedSharedPreferences for sync network access) ---
 
     fun isProxyEnabled(): Flow<Boolean> {
         return context.dataStore.data.map { prefs ->
@@ -94,9 +94,14 @@ class SecurePrefs @Inject constructor(
         }
     }
 
+    fun getProxyEnabledSync(): Boolean {
+        return encryptedPrefs.getBoolean("proxy_enabled", false)
+    }
+
     suspend fun setProxyEnabled(enabled: Boolean) {
         try {
             context.dataStore.edit { prefs -> prefs[PROXY_ENABLED] = enabled }
+            encryptedPrefs.edit().putBoolean("proxy_enabled", enabled).apply()
         } catch (e: Exception) {
             android.util.Log.e("SecurePrefs", "Failed to save proxy_enabled", e)
         }
@@ -108,9 +113,14 @@ class SecurePrefs @Inject constructor(
         }
     }
 
+    fun getProxyAddressSync(): String {
+        return encryptedPrefs.getString("proxy_address", null) ?: ""
+    }
+
     suspend fun setProxyAddress(address: String) {
         try {
             context.dataStore.edit { prefs -> prefs[PROXY_ADDRESS] = address }
+            encryptedPrefs.edit().putString("proxy_address", address).apply()
         } catch (e: Exception) {
             android.util.Log.e("SecurePrefs", "Failed to save proxy_address", e)
         }

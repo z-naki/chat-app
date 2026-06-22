@@ -154,7 +154,7 @@ class ProviderEditViewModel @Inject constructor(
         ProviderType.DEEPSEEK -> "deepseek-v4-pro"
         ProviderType.OPENAI -> "gpt-4o"
         ProviderType.ANTHROPIC -> "claude-sonnet-4-6"
-        ProviderType.GEMINI -> "gemini-2.5-pro"
+        ProviderType.GEMINI -> "gemini-2.5-flash"
         ProviderType.MOONSHOT -> "moonshot-v1-128k"
         ProviderType.QWEN -> "qwen-max"
         ProviderType.CUSTOM_1, ProviderType.CUSTOM_2, ProviderType.CUSTOM_3 -> ""
