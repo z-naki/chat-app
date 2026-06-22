@@ -9,7 +9,7 @@
 
 **English** · [中文](#中文)
 
-A clean, minimalist Android AI chat client. **Personal practice project** — built to learn Kotlin + Compose, not a commercial product.
+A clean, minimalist Android AI chat client. **Personal practice project**, not a commercial product.
 
 ### Why this app?
 
@@ -80,7 +80,7 @@ This is a personal learning project. All API keys are stored locally with Androi
 
 ## 中文
 
-一个简洁现代的 Android AI 聊天客户端。**个人练手作品**，用来学习 Kotlin + Compose，非商业产品。
+一个简洁现代的 Android AI 聊天客户端。**个人练手作品**，非商业产品。
 
 ### 为什么用这个？
 
