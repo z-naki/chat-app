@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -7,9 +9,23 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
+val localProperties = Properties().apply {
+    val file = rootProject.file("local.properties")
+    if (file.exists()) load(file.inputStream())
+}
+
 android {
     namespace = "com.chatapp"
     compileSdk = 35
+
+    signingConfigs {
+        create("release") {
+            storeFile = rootProject.file(localProperties.getProperty("storeFile") ?: "chat-app.jks")
+            storePassword = localProperties.getProperty("storePassword") ?: ""
+            keyAlias = localProperties.getProperty("keyAlias") ?: ""
+            keyPassword = localProperties.getProperty("keyPassword") ?: ""
+        }
+    }
 
     defaultConfig {
         applicationId = "com.chatapp"
@@ -22,7 +38,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
+            signingConfig = signingConfigs.getByName("release")
+            isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"

@@ -16,3 +16,5 @@ local.properties
 CLAUDE.md
 .claude/
 docs/
+# Release signing
+chat-app.jks
